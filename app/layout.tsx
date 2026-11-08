@@ -1,0 +1,3 @@
+import './styles.css'; import type { Metadata } from 'next'; import PageAnalytics from './page-analytics'; import Script from 'next/script';
+export const metadata:Metadata={title:'Amigos Car Care | Qatar',description:'Professional automotive care across Qatar. Book a service, explore offers and find your nearest branch.'};
+export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><head><link rel="stylesheet" href="/assets/advanced-features.css"/></head><body><PageAnalytics/>{children}<Script src="/assets/arabic.js" strategy="afterInteractive"/></body></html>}

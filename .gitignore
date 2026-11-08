@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+data/*.db
+data/pglite/
+data/local-db/
+data/private-cv/
+public/uploads/*
+!public/uploads/.gitkeep
+npm-debug.log*
+pnpm-debug.log*

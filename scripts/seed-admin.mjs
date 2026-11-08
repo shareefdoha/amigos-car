@@ -1,0 +1,11 @@
+import bcrypt from 'bcryptjs';
+import { PGlite } from '@electric-sql/pglite';
+import pg from 'pg';
+import path from 'node:path';
+const { ADMIN_INITIAL_USERNAME: username, ADMIN_INITIAL_EMAIL: email, ADMIN_INITIAL_PASSWORD: password, DATABASE_URL } = process.env;
+if (!username || !email || !password || password === 'SET_A_NEW_UNIQUE_PASSWORD_HERE') throw new Error('Set ADMIN_INITIAL_USERNAME, ADMIN_INITIAL_EMAIL and a new ADMIN_INITIAL_PASSWORD in your private environment before seeding.');
+const db = DATABASE_URL ? new pg.Pool({ connectionString: DATABASE_URL, ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : undefined }) : new PGlite(path.join(process.cwd(), 'data', 'local-db'));
+const hash = await bcrypt.hash(password, 12); const exists = await db.query('SELECT id FROM admins WHERE username=$1 OR email=$2',[username,email]);
+if (!exists.rows.length) await db.query('INSERT INTO admins(username,email,password_hash,role) VALUES($1,$2,$3,$4)',[username,email,hash,'super_admin']);
+if (DATABASE_URL) await db.end(); else await db.close();
+console.log(exists.rows.length ? 'An administrator with that username or email already exists.' : 'Initial administrator created.');

@@ -1,0 +1,2 @@
+const buckets=new Map<string,{from:number;hits:number}>();
+export function rateLimit(req:Request,key:string,limit:number,windowMs:number){const forwarded=req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'local';const now=Date.now();const id=`${key}:${forwarded}`;const current=buckets.get(id);if(!current||now-current.from>windowMs){buckets.set(id,{from:now,hits:1});return true}if(current.hits>=limit)return false;current.hits++;return true}

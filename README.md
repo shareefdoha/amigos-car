@@ -1,0 +1,44 @@
+# Amigos Car Care platform
+
+Full-stack Amigos Car Care Qatar website with a responsive public site, CMS, backend APIs, email-code MFA for administrators, image upload, business and career enquiry intake, booking, offers, and PostgreSQL-compatible persistence.
+
+## Amigos Assist chatbot
+
+The public chat currently uses a client-side guided automotive knowledge flow. It is not connected to a generative AI provider and does not send chat text to a model. Its safety guidance, diagnostic boundaries, service routing, and Qatar-specific guidance are based on `docs/AMIGOS-AUTOMOTIVE-ASSISTANT-SYSTEM-PROMPT.md`. To enable model-backed answers, implement a server-side provider endpoint that uses that system prompt, protects provider credentials, and applies the documented safety and privacy rules.
+
+## Local setup
+
+1. Install Node.js 20.9 or newer.
+2. Copy `.env.example` to `.env.local` and set a new, unique `ADMIN_INITIAL_PASSWORD`, a private admin email address and a random `AUTH_SECRET`.
+3. Set `MAIL_MODE=console` for local development. On first admin sign-in, the one-time code is printed only in the server terminal. Never use console email mode in production.
+4. Run `pnpm install`, then `pnpm dev`, and open `http://localhost:3000`.
+
+Without `DATABASE_URL`, local development uses an embedded PGlite PostgreSQL-compatible database stored under `data/local-db`. For production, set `DATABASE_URL` to managed PostgreSQL 16+ (or newer); set `DATABASE_SSL=true` only when the provider requires TLS and its certificate chain is trusted. Database tables are created on first API request. Seeded service and branch records are inserted idempotently.
+
+## Admin CMS
+
+Open `/admin`. Initial administrator creation is bootstrapped from the environment on the first sign-in attempt. A password alone never creates a session: the emailed six-digit code is also required. Configure SMTP with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM` and set `MAIL_MODE=smtp` for production. The initial username/email/password are environment setup secrets; rotate the password after first login and keep secrets out of the repository.
+
+The CMS edits website settings, service cards, branches and offers. Offers must have status `published` to appear publicly. The public site footer links to Instagram, Facebook and LinkedIn. The homepage includes the moving three-at-a-time service flow, category filters, searchable full list, language toggle, branch cards, image slider, FAQ and mechanic-assistance chat. Business and Careers are separate pages. Uploads are limited to raster images up to 8 MB and are written to `public/uploads` in this starter; production should replace local media storage with managed object storage/CDN and configure backup/retention.
+
+## API surface
+
+- `GET /api/health`
+- `GET /api/public/site`
+- `POST /api/public/enquiries` (booking and general enquiries)
+- `POST /api/public/business` (multipart business enquiry and optional attachment)
+- `POST /api/public/careers` (multipart application with required CV)
+- `POST /api/auth/login`, `/api/auth/verify`, `/api/auth/logout`, `GET /api/auth/session`
+- `/api/admin/site`, `/api/admin/services`, `/api/admin/branches`, `/api/admin/offers`, `/api/admin/enquiries`, `GET /api/admin/enquiries?attachment=<id>`, `POST /api/admin/upload`
+
+Admin sessions use an opaque HttpOnly, SameSite cookie; only the SHA-256 token digest is stored in the database. Passwords and one-time codes are stored as bcrypt hashes. Admin mutations are audit logged. Do not put secrets or credentials in frontend code.
+
+## Important production work
+
+The local PGlite file database and local upload directory are for development only. Business, career, and booking submissions persist in the database; configured SMTP sends notifications to `info@amigoscarcare.com`. The protected CMS includes the enquiry inbox and authenticated private-attachment download. Before public launch, configure managed PostgreSQL, private object storage, verified SMTP, HTTPS, backups, monitoring, and a deployment platform. Public forms use server validation and rate limits; add CAPTCHA/abuse monitoring if launch traffic requires it. Aggregate analytics reports page views only and does not infer age, gender, or visitor identity.
+
+## Developer handoff
+
+See `docs/DEVELOPER-HANDOVER.md` for the visual architecture, file map, local and production SOPs, security boundaries, and release checklist. The editable Word and PDF versions are in the same folder. See `docs/ENVIRONMENT-CONFIGURATION.md` for every environment setting. `TECHNICAL-SPECIFICATION.md` describes the technical architecture, data model, APIs, and production target. The ZIP intentionally excludes `.env.local`, local database files, private CV uploads, generated build output and dependencies. Each developer should create their own `.env.local` from `.env.example`; never share credentials in the source archive. This package delivers the web app and CMS. Native iOS/Android apps are not included.
+
+The existing static site remains in `outputs/amigos-car-care` as the reference version.

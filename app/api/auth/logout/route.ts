@@ -1,0 +1,2 @@
+import { cookies } from 'next/headers'; import { SESSION_COOKIE,hash } from '@/lib/auth'; import { query } from '@/lib/db'; export const runtime='nodejs';
+export async function POST(){const jar=await cookies();const token=jar.get(SESSION_COOKIE)?.value;if(token)await query('DELETE FROM admin_sessions WHERE token_hash=$1',[hash(token)]);const r=Response.json({ok:true});r.headers.append('Set-Cookie',`${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0`);return r;}
