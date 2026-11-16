@@ -1,6 +1,6 @@
 # Amigos Car Care platform
 
-Full-stack Amigos Car Care Qatar website with a responsive public site, CMS, backend APIs, email-code MFA for administrators, image upload, business and career enquiry intake, booking, offers, and MySQL/MariaDB or PostgreSQL persistence.
+Full-stack Amigos Car Care Qatar website with a responsive public site, CMS, backend APIs, password-based administrator sign-in, image upload, business and career enquiry intake, booking, offers, and MySQL/MariaDB or PostgreSQL persistence.
 
 ## Amigos Assist chatbot
 
@@ -10,7 +10,7 @@ The public chat currently uses a client-side guided automotive knowledge flow. I
 
 1. Install Node.js 20.9 or newer.
 2. Copy `.env.example` to `.env.local` and set a new, unique `ADMIN_INITIAL_PASSWORD`, a private admin email address and a random `AUTH_SECRET`.
-3. Set `MAIL_MODE=console` for local development. On first admin sign-in, the one-time code is printed only in the server terminal. Never use console email mode in production.
+3. Admin sign-in uses username and password. SMTP is optional and is used only for enquiry notifications.
 4. Run `pnpm install`, then `pnpm dev`, and open `http://localhost:3000`.
 
 Without `DATABASE_URL`, local development uses an embedded PGlite PostgreSQL-compatible database stored under `data/local-db`. For production, set `DATABASE_URL` to MySQL 8.0.16+, MariaDB 10.6+, or managed PostgreSQL 16+. MySQL/MariaDB URLs start with `mysql://` (or `mariadb://`), and PostgreSQL URLs start with `postgresql://`. Set `DATABASE_SSL=true` only when the provider requires TLS and its certificate chain is trusted. Database tables are created on first API request. Seeded service and branch records are inserted idempotently.
@@ -19,7 +19,7 @@ For Hostinger, follow [the MySQL setup guide](docs/HOSTINGER-MYSQL.md) and impor
 
 ## Admin CMS
 
-Open `/admin`. Initial administrator creation is bootstrapped from the environment on the first sign-in attempt. A password alone never creates a session: the emailed six-digit code is also required. Configure SMTP with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM` and set `MAIL_MODE=smtp` for production. The initial username/email/password are environment setup secrets; rotate the password after first login and keep secrets out of the repository.
+Open `/admin`. Initial administrator creation is bootstrapped from the environment on the first sign-in attempt. A valid username and password create the admin session immediately; no email code is required. SMTP is optional for enquiry notifications: configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and `MAIL_MODE=smtp` when using those emails. The initial username/email/password are environment setup secrets; rotate the password after first login and keep secrets out of the repository.
 
 The CMS edits website settings, service cards, branches and offers. Offers must have status `published` to appear publicly. The public site footer links to Instagram, Facebook and LinkedIn. The homepage includes the moving three-at-a-time service flow, category filters, searchable full list, language toggle, branch cards, image slider, FAQ and mechanic-assistance chat. Business and Careers are separate pages. Uploads are limited to raster images up to 8 MB and are written to `public/uploads` in this starter; production should replace local media storage with managed object storage/CDN and configure backup/retention.
 
@@ -33,7 +33,7 @@ The CMS edits website settings, service cards, branches and offers. Offers must 
 - `POST /api/auth/login`, `/api/auth/verify`, `/api/auth/logout`, `GET /api/auth/session`
 - `/api/admin/site`, `/api/admin/services`, `/api/admin/branches`, `/api/admin/offers`, `/api/admin/enquiries`, `GET /api/admin/enquiries?attachment=<id>`, `POST /api/admin/upload`
 
-Admin sessions use an opaque HttpOnly, SameSite cookie; only the SHA-256 token digest is stored in the database. Passwords and one-time codes are stored as bcrypt hashes. Admin mutations are audit logged. Do not put secrets or credentials in frontend code.
+Admin sessions use an opaque HttpOnly, SameSite cookie; only the SHA-256 token digest is stored in the database. Passwords are stored as bcrypt hashes. Admin mutations are audit logged. Do not put secrets or credentials in frontend code.
 
 ## Important production work
 

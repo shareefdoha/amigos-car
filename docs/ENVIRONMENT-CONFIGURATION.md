@@ -7,7 +7,6 @@ The application reads environment values at startup. Use `.env.local` only for p
 1. Copy `.env.example` to `.env.local`.
 2. Keep `DATABASE_URL` empty to use the local PGlite database under `data/local-db/`.
 3. Set a unique admin username, private email and strong password. Generate a random auth secret with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"` and replace the placeholder.
-4. Keep `MAIL_MODE=console` to print local MFA codes in the server terminal. Keep `MFA_DISABLED_FOR_LOCAL_TEST=false` in normal use.
 5. Start with `pnpm dev`. The server uses port 3000 unless `PORT` is set.
 
 ## Production values
@@ -21,11 +20,10 @@ Configure these in the host's secret/environment panel. Do not deploy a checked-
 | `DATABASE_SSL` | `true` when the provider requires TLS and its certificate is trusted; otherwise `false`. |
 | `PORT` | Let the platform inject its assigned port. The app binds to `0.0.0.0`. |
 | `ADMIN_INITIAL_USERNAME` | Initial admin username, unique to this deployment. |
-| `ADMIN_INITIAL_EMAIL` | Monitored private address used for admin MFA codes. |
+| `ADMIN_INITIAL_EMAIL` | Administrative contact email stored on the admin profile; not used for sign-in codes. |
 | `ADMIN_INITIAL_PASSWORD` | New unique bootstrap password; rotate after provisioning and follow your identity policy. |
 | `AUTH_SECRET` | Cryptographically random value of at least 32 characters. Store only in the host secret manager. |
 | `MAIL_MODE` | `smtp`; console mode is local development only. |
-| `MFA_DISABLED_FOR_LOCAL_TEST` | Always `false` in staging and production. |
 | `SMTP_HOST` | Transactional SMTP server hostname. |
 | `SMTP_PORT` | Provider's recommended port. The current transport enables implicit TLS on port 465. |
 | `SMTP_USER`, `SMTP_PASS` | SMTP credentials. Rotate if exposed. |
@@ -39,7 +37,7 @@ The root `.env.example` contains placeholders only. It is safe to share and shou
 
 ## Email delivery behavior
 
-Admin MFA needs working SMTP in a hosted environment. Business, career and booking notification code also checks SMTP settings and attempts delivery. If an email attempt is missing or fails, the request is still stored in the database and must be reviewed in the CMS enquiry inbox. Set up delivery monitoring and a recovery process before launch.
+Admin sign-in does not use SMTP or email verification. Business, career and booking notification code also checks SMTP settings and attempts delivery. If an email attempt is missing or fails, the request is still stored in the database and must be reviewed in the CMS enquiry inbox. Set up delivery monitoring and a recovery process before launch.
 
 ## Storage configuration is separate
 

@@ -170,7 +170,7 @@ async function seed() {
   await query("UPDATE branches SET phone='+974 7737 6786',map_url='https://maps.app.goo.gl/3fGj8tNDxece6XhF7?g_st=ic' WHERE slug='ezdan-wukair' AND phone='+974 4477 0000'");
   const username = process.env.ADMIN_INITIAL_USERNAME; const email = process.env.ADMIN_INITIAL_EMAIL; const password = process.env.ADMIN_INITIAL_PASSWORD;
   if (username && email && password && password !== 'SET_A_NEW_UNIQUE_PASSWORD_HERE') {
-    const existing = await query('SELECT id FROM admins WHERE username=$1', [username]);
+    const existing = await query('SELECT id FROM admins WHERE username=$1 OR email=$2', [username,email]);
     if (!existing.rows.length) await insertRow('admins', { username, email, password_hash: await bcrypt.hash(password,12), role: 'super_admin' });
   }
 

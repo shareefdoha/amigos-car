@@ -11,9 +11,10 @@ const port = process.env.TEST_PORT || '3101';
 const origin = `http://127.0.0.1:${port}`;
 const password = randomBytes(24).toString('base64url');
 const authSecret = randomBytes(48).toString('hex');
-const child = spawn(process.execPath, ['scripts/run-next.mjs', '--dev'], {
+const production = process.env.TEST_PRODUCTION === 'true';
+const child = spawn(process.execPath, ['scripts/run-next.mjs', ...(production ? [] : ['--dev'])], {
   cwd: process.cwd(), windowsHide: true,
-  env: {...process.env, NODE_ENV:'development',PORT:port,DATABASE_URL:url,DATABASE_SSL:'false',ADMIN_INITIAL_USERNAME:'http-test-admin',ADMIN_INITIAL_EMAIL:'http-test@example.com',ADMIN_INITIAL_PASSWORD:password,AUTH_SECRET:authSecret,MAIL_MODE:'console',MFA_DISABLED_FOR_LOCAL_TEST:'false',SMTP_HOST:''},
+  env: {...process.env, NODE_ENV:production?'production':'development',PORT:port,DATABASE_URL:url,DATABASE_SSL:'false',ADMIN_INITIAL_USERNAME:'http-test-admin',ADMIN_INITIAL_EMAIL:'http-test@example.com',ADMIN_INITIAL_PASSWORD:password,AUTH_SECRET:authSecret,MAIL_MODE:'smtp',SMTP_HOST:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:''},
   stdio:['ignore','pipe','pipe'],
 });
 let output = '';
@@ -34,7 +35,15 @@ const request = async (endpoint, {method='GET',body,status=200}={}) => {
   const response = await fetch(origin+endpoint,{method,headers,body,signal:AbortSignal.timeout(30000)});
   const value = await response.json();
   assert.equal(response.status,status,`${method} ${endpoint}: ${JSON.stringify(value)}`);
-  if(response.headers.get('set-cookie'))cookie=response.headers.get('set-cookie').split(';')[0];
+  if(response.headers.get('set-cookie')) {
+    const header=response.headers.get('set-cookie');
+    cookie=header.split(';')[0];
+    if(endpoint==='/api/auth/login') {
+      assert.ok(header.includes('HttpOnly'));
+      assert.ok(header.includes('SameSite=Strict'));
+      if(production)assert.ok(header.includes('; Secure'));
+    }
+  }
   return value;
 };
 const db = await createDatabase({DATABASE_URL:url,DATABASE_SSL:'false'});
@@ -48,10 +57,12 @@ try {
   assert.deepEqual(site.services.find(service=>service.slug==='periodic-maintenance').gallery_images,['/assets/periodic-maintenance-drive.jpg']);
   assert.equal((await request('/api/public/site')).services.length,8);
   await request('/api/admin/services',{status:401});
-  const challenge = await request('/api/auth/login',{method:'POST',body:{username:'http-test-admin',password}});
-  await waitFor(()=> /\[LOCAL MFA\] http-test@example.com: (\d{6})/.test(output));
-  const code = output.match(/\[LOCAL MFA\] http-test@example.com: (\d{6})/)[1];
-  await request('/api/auth/verify',{method:'POST',body:{challengeId:challenge.challengeId,code}});
+  await request('/api/auth/login',{method:'POST',body:{username:'http-test-admin',password:'wrong-password'},status:401});
+  assert.equal(cookie,'');
+  const login = await request('/api/auth/login',{method:'POST',body:{username:'http-test-admin',password}});
+  assert.equal(login.authenticated,true);
+  assert.equal(login.challengeId,undefined);
+  assert.equal(Number((await db.query('SELECT count(*) AS count FROM login_challenges')).rows[0].count),0);
   assert.ok(cookie.includes('amigos_admin_session='));
   const adminSession = await request('/api/auth/session');
   assert.ok(JSON.stringify(adminSession).includes('http-test-admin'));
@@ -97,10 +108,8 @@ try {
   await db.insert('admin_sessions',{admin_id:admin.id,token_hash:createHmac('sha256',authSecret).update(expiredToken).digest('hex'),expires_at:new Date(Date.now()-60000)});
   cookie=`amigos_admin_session=${expiredToken}`;
   await request('/api/admin/services',{status:401});
-  const expiredChallenge=await request('/api/auth/login',{method:'POST',body:{username:'http-test-admin',password}});
-  await db.query('UPDATE login_challenges SET expires_at=$1 WHERE id=$2',[new Date(Date.now()-60000),expiredChallenge.challengeId]);
-  await request('/api/auth/verify',{method:'POST',body:{challengeId:expiredChallenge.challengeId,code:'000000'},status:401});
-  console.log('MariaDB HTTP checks passed: seed, MFA login, sessions, CMS CRUD, settings, booking, business, CV upload/download, analytics, logout.');
+  await request('/api/auth/verify',{method:'POST',body:{challengeId:'00000000-0000-4000-8000-000000000000',code:'000000'},status:410});
+  console.log('MariaDB HTTP checks passed: seed, password-only login, sessions, CMS CRUD, settings, booking, business, CV upload/download, analytics, logout.');
 } finally {
   child.kill('SIGTERM');
   await db.close();

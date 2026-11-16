@@ -1,5 +1,7 @@
 # Amigos Car Care Website and CMS Developer Handover
 
+**Sign-in update:** Admin access now uses username and password only; SMTP is optional for enquiry notifications. The older Word/PDF copies still describe email verification.
+
 **Hostinger update:** The current source also supports MySQL 8.0.16+ / MariaDB 10.6+. Use `data/schema.mysql.sql`, a `mysql://` database URL, and `docs/HOSTINGER-MYSQL.md`. `scripts/database.mjs` contains the shared adapter used by the web app and CLI tools. The Word/PDF copies predate this database update; use the current Markdown instructions for Hostinger.
 
 **Purpose:** explain the delivered web application, its structure, configuration, local workflow, hosting procedure, and production boundaries so a development team can take ownership.
@@ -47,7 +49,7 @@ flowchart LR
 1. **Public content:** the browser loads Next.js pages. The home page calls `GET /api/public/site`, which seeds defaults if needed and returns active services, active branches, published offers, and public settings.
 2. **Booking:** the form submits JSON to `/api/public/enquiries`. The API validates and stores the request. It attempts email notification if SMTP is fully configured; the database inbox remains the record of receipt.
 3. **Business enquiry and career application:** multipart forms submit to `/api/public/business` and `/api/public/careers`. The API validates fields, stores the enquiry, stores career CVs privately, and attempts notification email.
-4. **CMS:** an administrator signs in with username and password, then confirms a short-lived email code. The server sets an HttpOnly session cookie. The CMS calls protected `/api/admin/*` endpoints; changes are written to the database and audit log.
+4. **CMS:** an administrator signs in with username and password. The server sets an HttpOnly session cookie. The CMS calls protected `/api/admin/*` endpoints; changes are written to the database and audit log.
 5. **Assets:** bundled photos and public scripts live in `public/assets`. CMS image uploads are currently written under `public/uploads`; career attachments are written under `data/private-cv`.
 
 ## Routes and pages
@@ -77,7 +79,7 @@ The social profiles are currently defined in `app/social-links.tsx`, not in the 
 | `app/admin/page.tsx` | CMS interface and sign-in experience | Changing admin editing UI |
 | `app/admin/analytics/page.tsx` | Admin traffic metrics | Changing analytics presentation |
 | `app/api/public/*/route.ts` | Public content, booking, business, careers, analytics | Changing public API behavior or validation |
-| `app/api/auth/*/route.ts` | Login, email-code verification, session, logout | Changing authentication behavior |
+| `app/api/auth/*/route.ts` | Password login, session, logout; retired email verification returns HTTP 410 | Changing authentication behavior |
 | `app/api/admin/*/route.ts` | Authenticated CMS reads and changes | Changing content-management API behavior |
 | `app/api/admin/[collection]/route.ts` | Shared collection API implementation | Updating service, branch, or offer CRUD rules |
 | `app/social-links.tsx` | Instagram, Facebook, and LinkedIn URLs and icons | Changing official social profiles |
@@ -146,8 +148,7 @@ Start from the included `.env.example`; create a local `.env.local` that is neve
 | `ADMIN_INITIAL_USERNAME`, `ADMIN_INITIAL_EMAIL`, `ADMIN_INITIAL_PASSWORD` | Creating the initial admin | Use a private admin email and new unique password; never commit these values. |
 | `AUTH_SECRET` | Always in production | Random secret of at least 32 characters; use a secret manager. |
 | `MAIL_MODE` | Always | `console` for local OTP output only; `smtp` for production OTP email. |
-| `MFA_DISABLED_FOR_LOCAL_TEST` | Local-only testing | Keep `false`; production ignores bypass, but MFA must remain enabled. |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Email MFA and enquiry notifications | Use a verified sender. The code enables implicit TLS on port 465; use the provider-recommended port. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Optional enquiry notifications | Use a verified sender. The code enables implicit TLS on port 465; use the provider-recommended port. |
 
 The template deliberately avoids unused settings. For example, the current app does not read `NEXT_PUBLIC_SITE_URL` or `SMTP_SECURE`; the mail transport derives TLS mode from the port.
 
@@ -156,18 +157,17 @@ The template deliberately avoids unused settings. For example, the current app d
 1. Install Node.js 20.9 or newer and an approved pnpm version. Open a terminal in the extracted project root.
 2. Create private config from the sample: `Copy-Item .env.example .env.local` in PowerShell or `cp .env.example .env.local` on macOS/Linux.
 3. Edit `.env.local`. Choose a new admin username, private email and unique password. Generate `AUTH_SECRET` with Node: `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
-4. Keep `DATABASE_URL` empty and `MAIL_MODE=console` for local work. Leave `MFA_DISABLED_FOR_LOCAL_TEST=false` unless a time-limited local login test specifically requires bypassing MFA.
 5. Install the locked dependencies: `pnpm install --frozen-lockfile`.
 6. Check TypeScript: `pnpm run check`.
 7. Create local tables: `pnpm db:init`.
 8. Start development: `pnpm dev`, then open `http://localhost:3000`. The server must remain running while testing.
-9. Check health at `http://localhost:3000/api/health`; open `/admin` for CMS. In console mail mode, read the one-time sign-in code in the server terminal.
+9. Check health at `http://localhost:3000/api/health`; open `/admin` and sign in with your username and password.
 
 Seeded services and branches are inserted idempotently when public content is first requested. `pnpm db:seed` can create an initial admin account explicitly after schema setup. Do not share a local database folder to move content; use a controlled database migration/export process.
 
 ## Content editing SOP
 
-Use `/admin` after MFA sign-in. Change services, branches, offers, or public settings there. An offer must be published and inside its active dates to appear. Uploads under `public/uploads` are public website imagery; never upload private application documents there. Review the public page after every content change, including mobile and Arabic display.
+Use `/admin` after password sign-in. Change services, branches, offers, or public settings there. An offer must be published and inside its active dates to appear. Uploads under `public/uploads` are public website imagery; never upload private application documents there. Review the public page after every content change, including mobile and Arabic display.
 
 Some things are code-controlled rather than CMS-controlled: social profile URLs are in `app/social-links.tsx`; navigation and section structure are in page components; translations are in `public/assets/arabic.js`; seeded defaults are in `lib/seed.ts`. Make code changes in the source and commit them. CMS edits are saved in the database, not as edits to source files.
 
@@ -177,7 +177,6 @@ Some things are code-controlled rather than CMS-controlled: social profile URLs 
 
 1. Choose a Node.js application host that supports the Node version in this guide and a persistent runtime. Configure a managed PostgreSQL database and verified SMTP account.
 2. Connect a private source repository or upload the handoff package. Use the included `pnpm-lock.yaml`; install with `pnpm install --frozen-lockfile`.
-3. Add environment variables in the host secret manager, not in source or a checked-in file. Set `DATABASE_URL`, provider-appropriate `DATABASE_SSL`, `AUTH_SECRET`, new admin bootstrap settings, SMTP credentials, `MAIL_MODE=smtp`, and `MFA_DISABLED_FOR_LOCAL_TEST=false`. Let the host set `NODE_ENV=production` and `PORT`.
 4. Build with `pnpm run check` and `pnpm run build`; start with `pnpm start` (which runs `scripts/run-next.mjs`). Configure the platform health check to `GET /api/health`.
 5. Initialize schema with `pnpm db:init`, then create the initial admin with `pnpm db:seed` using the same production environment. Verify login and email delivery before inviting users.
 6. Review service and branch content, test booking/business/career forms, check the admin inbox and notification flags, and verify all images, social links, Arabic layout, and mobile breakpoints.
@@ -197,7 +196,6 @@ Some things are code-controlled rather than CMS-controlled: social profile URLs 
 - Never commit or email `.env.local`, passwords, `AUTH_SECRET`, SMTP credentials, database URLs, local database files, or CV uploads.
 - `.gitignore` excludes `.env.*` (except `.env.example`), `data/local-db/`, `data/private-cv/`, and uploaded file contents. Check exclusions before every archive.
 - The admin password is bcrypt-hashed. Email codes are short-lived and limited to five attempts. Session tokens are random, stored as hashes in the database, and issued as HttpOnly, SameSite cookies; production cookies add Secure.
-- Do not turn on `MFA_DISABLED_FOR_LOCAL_TEST` in a hosted environment. Production requires `AUTH_SECRET` of at least 32 characters.
 - Analytics stores aggregate page paths and times only; it does not report visitor names, age, gender, or precise location.
 - Forms contain personal data. Limit access, define retention, and use private storage for CVs. Do not claim email delivery until SMTP is configured and the delivery state is checked.
 - The Amigos Assist chatbot is a guided client-side automotive help flow, not a generative AI model. Preserve its safety guidance; do not promise a diagnosis.
@@ -208,7 +206,7 @@ Some things are code-controlled rather than CMS-controlled: social profile URLs 
 |---|---|
 | `localhost:3000` refuses connection | Start `pnpm dev`; keep the terminal open; confirm `PORT` is 3000 and no other process owns it. |
 | Admin OTP not arriving locally | `MAIL_MODE=console` prints it in the running server terminal. |
-| Admin OTP not arriving in staging | Check all five SMTP values, sender verification, provider port/security settings, and host mail logs. |
+| Admin sign-in unavailable | Check the database connection, account active state, password, and AUTH_SECRET. SMTP is not required. |
 | Email did not arrive for a form | Check `/admin` enquiries and notification status; database receipt and email notification are separate outcomes. |
 | Content changes disappear after deploy | The default PGlite database or local media path may be ephemeral; configure managed database and durable storage. |
 | Uploaded CV missing after redeploy | Current CV storage is local to the app; implement persistent private object storage and backups before production. |
@@ -221,7 +219,7 @@ Some things are code-controlled rather than CMS-controlled: social profile URLs 
 - [ ] `.env.local`, local DB, CVs, and secrets excluded from the handoff.
 - [ ] TypeScript check and production build succeed.
 - [ ] Public routes, APIs, images, links, Arabic, and mobile layout reviewed.
-- [ ] Admin MFA, CMS updates, and access boundaries reviewed.
+- [ ] Admin password sign-in, CMS updates, and access boundaries reviewed.
 - [ ] Form storage and email notification tested independently.
 - [ ] Managed database backups and restore verified.
 - [ ] Durable image and private-CV storage ready.

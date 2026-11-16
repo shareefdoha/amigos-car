@@ -13,8 +13,8 @@ The platform contains a responsive public website for Amigos Car Care Qatar, a p
 | Web UI | Next.js App Router, React, TypeScript, responsive CSS | Same application, served over HTTPS/CDN |
 | Backend | Next.js route handlers, Node.js runtime, Zod request validation | Same-origin API routes initially; extract to NestJS only if separate scaling or external API governance is needed |
 | Database | MySQL/MariaDB and PostgreSQL adapters; embedded PGlite for local development | Hostinger MariaDB, MySQL 8.0.16+, or managed PostgreSQL 16+ with backups |
-| Authentication | bcrypt password hash, email one-time code, opaque HttpOnly session cookie | Managed identity provider or production SMTP-backed MFA; secrets stored in platform secret manager |
-| Email | Nodemailer SMTP adapter; local development code logs to server terminal | Verified transactional SMTP/email service; delivery alerts and suppression handling |
+| Authentication | bcrypt password hash and opaque HttpOnly session cookie | Password sign-in with rate limits; secrets stored in platform secret manager |
+| Email | Optional Nodemailer SMTP adapter for enquiry notifications | Verified transactional SMTP/email service; delivery alerts and suppression handling |
 | Media | Existing provided photos under `public/assets`; admin raster upload to `public/uploads` locally | Private Azure Blob Storage (or equivalent) behind a CDN; malware scanning, metadata stripping and retention |
 | Runtime/deploy | Node 20.9+, pnpm; local app starts on port 3000 | Container/app service in Qatar or nearby approved region, with staging and production environments |
 | Native clients | Not part of the delivered web app | Expo React Native client calling the same versioned API and using the same identity/database policies |
@@ -54,7 +54,7 @@ All web requests share one origin. The server checks the session cookie before r
 
 The `/admin` CMS supports site settings, service cards, branch details, offer publication and a customer enquiry inbox. Image upload accepts JPG, PNG, WebP and AVIF up to 8 MB. The `/admin/analytics` view shows aggregate page views and most-viewed page paths.
 
-The schema has `super_admin` and `content_editor` roles, but role-specific permissions and super-admin user provisioning are follow-on work; all active authenticated admins currently share CMS access. The first administrator is bootstrapped only from private environment variables (`ADMIN_INITIAL_USERNAME`, `ADMIN_INITIAL_EMAIL`, `ADMIN_INITIAL_PASSWORD`). The admin login flow is password then one-time six-digit code, expires after ten minutes and allows at most five code attempts. Passwords and OTPs are bcrypt-hashed; session tokens are random, HttpOnly, SameSite Strict cookies and only token digests are persisted. Admin changes generate audit records.
+The schema has `super_admin` and `content_editor` roles, but role-specific permissions and super-admin user provisioning are follow-on work; all active authenticated admins currently share CMS access. The first administrator is bootstrapped only from private environment variables (`ADMIN_INITIAL_USERNAME`, `ADMIN_INITIAL_EMAIL`, `ADMIN_INITIAL_PASSWORD`). Admin sign-in requires a valid username and password, with request rate limits. Passwords are bcrypt-hashed; session tokens are random, HttpOnly, SameSite Strict cookies and only token digests are persisted. Admin changes generate audit records.
 
 Initial account provisioning needs to occur before deployment; do not deploy a shared or default password. Rotate the initial password after setup. Never commit `.env.local` or production secrets.
 
@@ -64,7 +64,7 @@ Initial account provisioning needs to occur before deployment; do not deploy a s
 |---|---|
 | `admins` | Admin identity, bcrypt password hash, role and active state |
 | `admin_sessions` | Hashed opaque session token, expiry and admin reference |
-| `login_challenges` | Hashed one-time code, expiry, attempt count and one-use state |
+| `login_challenges` | Legacy table retained for compatibility; no longer used for sign-in |
 | `site_settings` | Public brand/contact/hero configuration |
 | `services` | EN/AR titles, summaries, details, image path and display order |
 | `branches` | EN/AR branch contacts, maps, hours, image and display order |
@@ -109,7 +109,7 @@ Response bodies are JSON except image and CV file responses. The endpoint struct
 
 1. Use Node.js 20.9+ and pnpm.
 2. Copy `.env.example` to `.env.local`; set unique admin credentials, a private admin email and a cryptographically random `AUTH_SECRET`.
-3. For local-only MFA, `MAIL_MODE=console` prints the OTP to the dev server terminal. Never run this mode in production.
+3. Admin sign-in needs no email setup. Configure SMTP only for enquiry notification emails.
 4. Run `pnpm install`, `pnpm db:init`, then `pnpm dev`; browse `http://localhost:3000`.
 5. First access to `/admin` initializes seed content and the configured initial admin account.
 
@@ -117,6 +117,6 @@ Use `DATABASE_URL` for managed PostgreSQL. Set `DATABASE_SSL=true` only when the
 
 ## 9. Production readiness and phased delivery
 
-Before public production use: deploy behind HTTPS; set up managed Postgres and backup/restore drills; configure and verify SMTP; configure durable private object storage for CVs and uploads; add malware scanning, lifecycle retention and admin-enforced enquiry retention; add rate limits/CAPTCHA for public forms; configure logging, uptime/error alerts and audit retention; enforce MFA and rotate all credentials; add CSRF/origin validation and security headers/CSP; run database migrations and a staging smoke review. User analytics intentionally do not infer age, gender or identify visitors; collect optional demographics only with a clear lawful basis and explicit consent.
+Before public production use: deploy behind HTTPS; set up managed Postgres and backup/restore drills; configure and verify SMTP; configure durable private object storage for CVs and uploads; add malware scanning, lifecycle retention and admin-enforced enquiry retention; add rate limits/CAPTCHA for public forms; configure logging, uptime/error alerts and audit retention; use strong unique admin passwords and rotate credentials; add CSRF/origin validation and security headers/CSP; run database migrations and a staging smoke review. User analytics intentionally do not infer age, gender or identify visitors; collect optional demographics only with a clear lawful basis and explicit consent.
 
 Suggested rollout: local development → staging with sample data → content review by Amigos → production DNS/HTTPS and secret setup → backup/monitoring validation → public launch. The included app is a working foundation and CMS, not a substitute for production infrastructure provisioning or business/security review.

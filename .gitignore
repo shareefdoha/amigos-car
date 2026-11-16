@@ -9,6 +9,7 @@ data/pglite/
 data/local-db/
 data/local-db-*/
 data/private-cv/
+data/private-admin/
 public/uploads/*
 !public/uploads/.gitkeep
 npm-debug.log*
