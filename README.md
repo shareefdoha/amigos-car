@@ -1,6 +1,6 @@
 # Amigos Car Care platform
 
-Full-stack Amigos Car Care Qatar website with a responsive public site, CMS, backend APIs, email-code MFA for administrators, image upload, business and career enquiry intake, booking, offers, and PostgreSQL-compatible persistence.
+Full-stack Amigos Car Care Qatar website with a responsive public site, CMS, backend APIs, email-code MFA for administrators, image upload, business and career enquiry intake, booking, offers, and MySQL/MariaDB or PostgreSQL persistence.
 
 ## Amigos Assist chatbot
 
@@ -13,7 +13,9 @@ The public chat currently uses a client-side guided automotive knowledge flow. I
 3. Set `MAIL_MODE=console` for local development. On first admin sign-in, the one-time code is printed only in the server terminal. Never use console email mode in production.
 4. Run `pnpm install`, then `pnpm dev`, and open `http://localhost:3000`.
 
-Without `DATABASE_URL`, local development uses an embedded PGlite PostgreSQL-compatible database stored under `data/local-db`. For production, set `DATABASE_URL` to managed PostgreSQL 16+ (or newer); set `DATABASE_SSL=true` only when the provider requires TLS and its certificate chain is trusted. Database tables are created on first API request. Seeded service and branch records are inserted idempotently.
+Without `DATABASE_URL`, local development uses an embedded PGlite PostgreSQL-compatible database stored under `data/local-db`. For production, set `DATABASE_URL` to MySQL 8.0.16+, MariaDB 10.6+, or managed PostgreSQL 16+. MySQL/MariaDB URLs start with `mysql://` (or `mariadb://`), and PostgreSQL URLs start with `postgresql://`. Set `DATABASE_SSL=true` only when the provider requires TLS and its certificate chain is trusted. Database tables are created on first API request. Seeded service and branch records are inserted idempotently.
+
+For Hostinger, follow [the MySQL setup guide](docs/HOSTINGER-MYSQL.md) and import **`data/schema.mysql.sql`** in phpMyAdmin. `data/schema.sql` is for PostgreSQL/PGlite only. The connection URL selects the matching database adapter and schema automatically.
 
 ## Admin CMS
 

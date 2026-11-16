@@ -16,7 +16,8 @@ Configure these in the host's secret/environment panel. Do not deploy a checked-
 
 | Variable | Production guidance |
 |---|---|
-| `DATABASE_URL` | Managed PostgreSQL connection URL. Treat it as a credential. |
+| `DATABASE_URL` | MySQL/MariaDB (`mysql://USER:PASSWORD@HOST:3306/DATABASE`) or PostgreSQL (`postgresql://...`) connection URL. Percent-encode credentials in URLs. See `HOSTINGER-MYSQL.md`. |
+| `LOCAL_DATABASE_PATH` | Optional development-only PGlite directory when `DATABASE_URL` is empty. Defaults to `data/local-db`. Does not migrate or replace an existing database. |
 | `DATABASE_SSL` | `true` when the provider requires TLS and its certificate is trusted; otherwise `false`. |
 | `PORT` | Let the platform inject its assigned port. The app binds to `0.0.0.0`. |
 | `ADMIN_INITIAL_USERNAME` | Initial admin username, unique to this deployment. |

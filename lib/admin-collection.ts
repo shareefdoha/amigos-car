@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { audit, bad, currentAdmin } from '@/lib/auth';
-import { query } from '@/lib/db';
+import { query, insertRow } from '@/lib/db';
 
 type Collection = 'services' | 'branches' | 'offers';
 const fields: Record<Collection, string[]> = {
@@ -24,7 +24,10 @@ function cleanInput(collection: Collection, raw: Record<string, unknown>) {
   for (const key of fields[collection]) if (key in raw) clean[key] = raw[key];
   return clean;
 }
-function dbValue(value: unknown) { return Array.isArray(value) ? JSON.stringify(value) : value; }
+function dbValue(value: unknown, key: string) {
+  if ((key === 'starts_at' || key === 'ends_at') && typeof value === 'string') return new Date(value);
+  return Array.isArray(value) ? JSON.stringify(value) : value;
+}
 
 export async function listContent(collection: Collection) {
   if (!await currentAdmin()) return bad('Sign in required.', 401);
@@ -37,11 +40,10 @@ export async function createContent(collection: Collection, req: Request) {
   const parsed = schemas[collection].safeParse(cleanInput(collection, raw));
   if (!parsed.success) return bad('Please check the required content fields.');
   try {
-    const entries = Object.entries(parsed.data);
-    const marks = entries.map((_, i) => `$${i + 1}`).join(',');
-    const result = await query(`INSERT INTO ${collection}(${entries.map(([key]) => key).join(',')}) VALUES(${marks}) RETURNING *`, entries.map(([, value]) => dbValue(value)));
-    const id = (result.rows[0] as { id: string }).id; await audit(admin.id, 'create', collection, id);
-    return Response.json(result.rows[0], { status: 201 });
+    const values = Object.fromEntries(Object.entries(parsed.data).map(([key,value]) => [key,dbValue(value,key)]));
+    const result = await insertRow<{id:string}>(collection, values);
+    await audit(admin.id, 'create', collection, result.id);
+    return Response.json(result, { status: 201 });
   } catch (error) { console.error(`Create ${collection} failed`, error); return bad('Could not save this item. Check that its URL slug is unique.', 409); }
 }
 export async function updateContent(collection: Collection, req: Request) {
@@ -52,7 +54,8 @@ export async function updateContent(collection: Collection, req: Request) {
   if (!parsed.success || !Object.keys(parsed.data).length) return bad('Please check the content fields.');
   try {
     const entries = Object.entries(parsed.data); const assignments = entries.map(([key], i) => `${key}=$${i + 1}`).join(',');
-    const result = await query(`UPDATE ${collection} SET ${assignments},updated_at=now() WHERE id=$${entries.length + 1} RETURNING *`, [...entries.map(([, value]) => dbValue(value)), id]);
+    await query(`UPDATE ${collection} SET ${assignments},updated_at=now() WHERE id=$${entries.length + 1}`, [...entries.map(([key, value]) => dbValue(value,key)), id]);
+    const result = await query(`SELECT * FROM ${collection} WHERE id=$1`, [id]);
     if (!result.rows.length) return bad('Content not found.', 404);
     await audit(admin.id, 'update', collection, id); return Response.json(result.rows[0]);
   } catch (error) { console.error(`Update ${collection} failed`, error); return bad('Could not update this item. Check values and unique slugs.', 409); }

@@ -1,11 +1,13 @@
 node_modules/
 .next/
+*.tsbuildinfo
 .env
 .env.*
 !.env.example
 data/*.db
 data/pglite/
 data/local-db/
+data/local-db-*/
 data/private-cv/
 public/uploads/*
 !public/uploads/.gitkeep

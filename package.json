@@ -8,20 +8,23 @@
     "start": "node scripts/run-next.mjs",
     "db:init": "node scripts/init-db.mjs",
     "db:seed": "node scripts/seed-admin.mjs",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test:db": "node scripts/test-database.mjs"
   },
   "dependencies": {
-    "@electric-sql/pglite": "latest",
+    "@electric-sql/pglite": "0.5.11",
+    "@next/env": "16.4.3",
     "bcryptjs": "latest",
-    "next": "latest",
-    "nodemailer": "latest",
+    "mysql2": "^3.24.6",
+    "next": "16.4.3",
+    "nodemailer": "10.2.1",
     "pg": "latest",
     "react": "latest",
     "react-dom": "latest",
     "zod": "latest"
   },
   "devDependencies": {
-    "@types/node": "latest",
+    "@types/node": "26.6.5",
     "@types/nodemailer": "latest",
     "@types/pg": "latest",
     "@types/react": "latest",

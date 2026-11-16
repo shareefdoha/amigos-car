@@ -1,23 +1,113 @@
 import bcrypt from 'bcryptjs';
-import { query } from '@/lib/db';
-let seeded = false;
-export async function ensureSeed() {
-  if (seeded) return;
-  await query(`INSERT INTO services(slug,title_en,summary_en,details_en,image_path,sort_order) VALUES
-  ('periodic-maintenance','Periodic Maintenance','Routine care that keeps your vehicle dependable.','["Engine oil and filter change","Routine vehicle servicing","Fluid replacement and inspection","Preventive maintenance"]','/assets/oil-change-web.jpg',1),
-  ('advanced-inspection','Advanced Vehicle Inspection','A detailed view of your vehicle’s condition and health.','["Expert physical vehicle inspection","Advanced computer diagnostics","Paint condition and thickness checks","Engine health testing"]','/assets/diagnostics-web.jpg',2),
-  ('brake-services','Brake Services','Confident stopping starts with a careful brake check.','["Brake pad and disc replacement","Brake system inspection","Brake troubleshooting and repair"]','/assets/brake-service-web.jpg',3),
-  ('electrical-diagnosis','Electrical Diagnosis & Repair','Find and fix electrical faults with precision.','["Electrical system diagnosis","Wiring and sensor repair","Starting and charging systems"]','/assets/electrical-ac-web.jpg',4),
-  ('car-ac','Car AC Services','Stay cool through Qatar’s hottest days.','["AC system diagnosis","Cooling problem troubleshooting","Leak inspection and gas recharge","AC component repair"]','/assets/ac-service-web.jpg',5),
-  ('engine-repair','Engine Repair','Engine diagnosis and repair for performance concerns, unusual noise, leaks and warning lights.','["Engine diagnostics and repair","Performance and warning-light diagnosis","Repair recommendations"]','/assets/engine-diagnostics-web.jpg',6),
-  ('transmission-repair','Transmission Repair','Transmission diagnosis and repair for shifting problems, unusual noise and fluid leaks.','["Transmission diagnosis and repair","Gear shifting troubleshooting","Fluid leak inspection"]','/assets/transmission-web.jpg',7),
-  ('denting-painting','Denting and Painting','Restore your vehicle’s finish with careful bodywork.','["Dent removal and bodywork","Scratch repair","Full and partial painting","Accident damage restoration"]','/assets/denting-painting-drive.png',8)
-  ON CONFLICT(slug) DO NOTHING`);
-  await query(`WITH migration AS (
-    INSERT INTO app_migrations(migration_id) VALUES ('20261026_restore_service_image_mapping_v1')
-    ON CONFLICT(migration_id) DO NOTHING RETURNING migration_id
-  )
-  UPDATE services SET
+import { query, insertRow, runMigration } from '@/lib/db';
+let seedPromise: Promise<void> | undefined;
+export function ensureSeed() {
+  return seedPromise ??= seed().catch(error => { seedPromise = undefined; throw error; });
+}
+async function seed() {
+  for (const service of [
+  {
+    "slug": "periodic-maintenance",
+    "title_en": "Periodic Maintenance",
+    "summary_en": "Routine care that keeps your vehicle dependable.",
+    "details_en": [
+      "Engine oil and filter change",
+      "Routine vehicle servicing",
+      "Fluid replacement and inspection",
+      "Preventive maintenance"
+    ],
+    "image_path": "/assets/oil-change-web.jpg",
+    "sort_order": 1
+  },
+  {
+    "slug": "advanced-inspection",
+    "title_en": "Advanced Vehicle Inspection",
+    "summary_en": "A detailed view of your vehicle’s condition and health.",
+    "details_en": [
+      "Expert physical vehicle inspection",
+      "Advanced computer diagnostics",
+      "Paint condition and thickness checks",
+      "Engine health testing"
+    ],
+    "image_path": "/assets/diagnostics-web.jpg",
+    "sort_order": 2
+  },
+  {
+    "slug": "brake-services",
+    "title_en": "Brake Services",
+    "summary_en": "Confident stopping starts with a careful brake check.",
+    "details_en": [
+      "Brake pad and disc replacement",
+      "Brake system inspection",
+      "Brake troubleshooting and repair"
+    ],
+    "image_path": "/assets/brake-service-web.jpg",
+    "sort_order": 3
+  },
+  {
+    "slug": "electrical-diagnosis",
+    "title_en": "Electrical Diagnosis & Repair",
+    "summary_en": "Find and fix electrical faults with precision.",
+    "details_en": [
+      "Electrical system diagnosis",
+      "Wiring and sensor repair",
+      "Starting and charging systems"
+    ],
+    "image_path": "/assets/electrical-ac-web.jpg",
+    "sort_order": 4
+  },
+  {
+    "slug": "car-ac",
+    "title_en": "Car AC Services",
+    "summary_en": "Stay cool through Qatar’s hottest days.",
+    "details_en": [
+      "AC system diagnosis",
+      "Cooling problem troubleshooting",
+      "Leak inspection and gas recharge",
+      "AC component repair"
+    ],
+    "image_path": "/assets/ac-service-web.jpg",
+    "sort_order": 5
+  },
+  {
+    "slug": "engine-repair",
+    "title_en": "Engine Repair",
+    "summary_en": "Engine diagnosis and repair for performance concerns, unusual noise, leaks and warning lights.",
+    "details_en": [
+      "Engine diagnostics and repair",
+      "Performance and warning-light diagnosis",
+      "Repair recommendations"
+    ],
+    "image_path": "/assets/engine-diagnostics-web.jpg",
+    "sort_order": 6
+  },
+  {
+    "slug": "transmission-repair",
+    "title_en": "Transmission Repair",
+    "summary_en": "Transmission diagnosis and repair for shifting problems, unusual noise and fluid leaks.",
+    "details_en": [
+      "Transmission diagnosis and repair",
+      "Gear shifting troubleshooting",
+      "Fluid leak inspection"
+    ],
+    "image_path": "/assets/transmission-web.jpg",
+    "sort_order": 7
+  },
+  {
+    "slug": "denting-painting",
+    "title_en": "Denting and Painting",
+    "summary_en": "Restore your vehicle’s finish with careful bodywork.",
+    "details_en": [
+      "Dent removal and bodywork",
+      "Scratch repair",
+      "Full and partial painting",
+      "Accident damage restoration"
+    ],
+    "image_path": "/assets/denting-painting-drive.png",
+    "sort_order": 8
+  }
+]) await insertRow('services', service, 'slug');
+  await runMigration('20261026_restore_service_image_mapping_v1', [`UPDATE services SET
     image_path=CASE slug
       WHEN 'periodic-maintenance' THEN '/assets/mechanics-web.jpg'
       WHEN 'advanced-inspection' THEN '/assets/diagnostics-web.jpg'
@@ -35,41 +125,53 @@ export async function ensureSeed() {
       WHEN 'transmission-repair' THEN 7 WHEN 'denting-painting' THEN 8
     END,
     updated_at=now()
-  WHERE slug IN ('periodic-maintenance','advanced-inspection','brake-services','electrical-diagnosis','car-ac','engine-repair','transmission-repair','denting-painting')
-    AND EXISTS (SELECT 1 FROM migration)`);
-  await query(`WITH migration AS (
-    INSERT INTO app_migrations(migration_id) VALUES ('20261026_restore_oil_change_service_photo_v2')
-    ON CONFLICT(migration_id) DO NOTHING RETURNING migration_id
-  )
-  UPDATE services SET image_path=CASE slug
+  WHERE slug IN ('periodic-maintenance','advanced-inspection','brake-services','electrical-diagnosis','car-ac','engine-repair','transmission-repair','denting-painting')`]);
+  await runMigration('20261026_restore_oil_change_service_photo_v2', [`UPDATE services SET image_path=CASE slug
       WHEN 'periodic-maintenance' THEN '/assets/oil-change-web.jpg'
       WHEN 'engine-repair' THEN '/assets/engine-diagnostics-web.jpg'
     END,
     updated_at=now()
-  WHERE slug IN ('periodic-maintenance','engine-repair')
-    AND EXISTS (SELECT 1 FROM migration)`);  await query("UPDATE services SET active=false WHERE slug='engine-transmission'");
-  await query(`WITH migration AS (
-    INSERT INTO app_migrations(migration_id) VALUES ('20261026_add_service_photo_galleries_v1')
-    ON CONFLICT(migration_id) DO NOTHING RETURNING migration_id
-  )
-  UPDATE services SET
-    image_path=CASE WHEN slug='engine-repair' THEN '/assets/engine-repair-drive.png' ELSE image_path END,
-    gallery_images=CASE WHEN slug='periodic-maintenance' THEN '["/assets/periodic-maintenance-drive.jpg"]'::jsonb ELSE gallery_images END,
-    updated_at=now()
-  WHERE slug IN ('periodic-maintenance','engine-repair')
-    AND EXISTS (SELECT 1 FROM migration)`);
-  await query(`INSERT INTO branches(slug,name_en,address_en,phone,map_url,image_path,sort_order) VALUES
-  ('b-ring','B-Ring Branch','B-Ring Road, Doha, Qatar','+974 7778 9303','https://maps.app.goo.gl/KSdkPuSMBDpsAnjb7?g_st=ic','/assets/branch-doha-web.jpg',1),
-  ('industrial-area','Industrial Area','Industrial Area, Doha, Qatar','+974 6697 2786','https://maps.app.goo.gl/yygJsF6qdyqH35YZ9','/assets/branch-industrial-web.jpg',2),
-  ('ezdan-wukair','Ezdan Oasis (Al Wukair)','Ezdan Oasis, Al Wukair, Qatar','+974 7737 6786','https://maps.app.goo.gl/3fGj8tNDxece6XhF7?g_st=ic','/assets/branch-wukair-web.jpg',3)
-  ON CONFLICT(slug) DO NOTHING`);
+  WHERE slug IN ('periodic-maintenance','engine-repair')`]);  await query("UPDATE services SET active=false WHERE slug='engine-transmission'");
+  await runMigration('20261026_add_service_photo_galleries_v1', [
+    "UPDATE services SET image_path='/assets/engine-repair-drive.png',updated_at=now() WHERE slug='engine-repair'",
+    `UPDATE services SET gallery_images='["/assets/periodic-maintenance-drive.jpg"]',updated_at=now() WHERE slug='periodic-maintenance'`,
+  ]);
+  for (const branch of [
+  {
+    "slug": "b-ring",
+    "name_en": "B-Ring Branch",
+    "address_en": "B-Ring Road, Doha, Qatar",
+    "phone": "+974 7778 9303",
+    "map_url": "https://maps.app.goo.gl/KSdkPuSMBDpsAnjb7?g_st=ic",
+    "image_path": "/assets/branch-doha-web.jpg",
+    "sort_order": 1
+  },
+  {
+    "slug": "industrial-area",
+    "name_en": "Industrial Area",
+    "address_en": "Industrial Area, Doha, Qatar",
+    "phone": "+974 6697 2786",
+    "map_url": "https://maps.app.goo.gl/yygJsF6qdyqH35YZ9",
+    "image_path": "/assets/branch-industrial-web.jpg",
+    "sort_order": 2
+  },
+  {
+    "slug": "ezdan-wukair",
+    "name_en": "Ezdan Oasis (Al Wukair)",
+    "address_en": "Ezdan Oasis, Al Wukair, Qatar",
+    "phone": "+974 7737 6786",
+    "map_url": "https://maps.app.goo.gl/3fGj8tNDxece6XhF7?g_st=ic",
+    "image_path": "/assets/branch-wukair-web.jpg",
+    "sort_order": 3
+  }
+]) await insertRow('branches', branch, 'slug');
   await query("UPDATE branches SET phone='+974 7778 9303',map_url='https://maps.app.goo.gl/KSdkPuSMBDpsAnjb7?g_st=ic' WHERE slug='b-ring' AND phone='+974 4444 0000'");
   await query("UPDATE branches SET phone='+974 6697 2786' WHERE slug='industrial-area' AND phone='+974 4466 0000'");
   await query("UPDATE branches SET phone='+974 7737 6786',map_url='https://maps.app.goo.gl/3fGj8tNDxece6XhF7?g_st=ic' WHERE slug='ezdan-wukair' AND phone='+974 4477 0000'");
   const username = process.env.ADMIN_INITIAL_USERNAME; const email = process.env.ADMIN_INITIAL_EMAIL; const password = process.env.ADMIN_INITIAL_PASSWORD;
   if (username && email && password && password !== 'SET_A_NEW_UNIQUE_PASSWORD_HERE') {
     const existing = await query('SELECT id FROM admins WHERE username=$1', [username]);
-    if (!existing.rows.length) await query('INSERT INTO admins(username,email,password_hash,role) VALUES($1,$2,$3,$4)', [username,email,await bcrypt.hash(password,12),'super_admin']);
+    if (!existing.rows.length) await insertRow('admins', { username, email, password_hash: await bcrypt.hash(password,12), role: 'super_admin' });
   }
-  seeded = true;
+
 }

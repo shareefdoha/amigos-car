@@ -1,6 +1,6 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { cookies } from 'next/headers';
-import { query } from '@/lib/db';
+import { query, insertRow } from '@/lib/db';
 
 export const hash = (s: string) => {
   const secret=process.env.AUTH_SECRET;
@@ -17,4 +17,4 @@ export async function currentAdmin() {
 }
 export async function adminOr401() { const admin = await currentAdmin(); return admin; }
 export function bad(message: string, status = 400) { return Response.json({ error: message }, { status }); }
-export async function audit(adminId:string, action:string, entity:string, id='') { await query('INSERT INTO audit_events(admin_id,action,entity,entity_id) VALUES($1,$2,$3,$4)', [adminId,action,entity,id]); }
+export async function audit(adminId:string, action:string, entity:string, id='') { await insertRow('audit_events',{admin_id:adminId,action,entity,entity_id:id}); }

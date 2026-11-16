@@ -1,5 +1,7 @@
 # Amigos Car Care — Full-Stack Technical Specification
 
+**Hostinger database update:** MySQL 8.0.16+ and MariaDB 10.6+ are supported alongside PostgreSQL/PGlite. Import `data/schema.mysql.sql` for phpMyAdmin, set `DATABASE_URL=mysql://...`, and follow `docs/HOSTINGER-MYSQL.md`. Database logic is shared in `scripts/database.mjs` and exposed to routes by `lib/db.ts`. The original `data/schema.sql` remains PostgreSQL-only.
+
 ## 1. Product scope
 
 The platform contains a responsive public website for Amigos Car Care Qatar, a protected content management system, server-side API endpoints, an SQL data model, enquiry/career intake and aggregate website analytics. The current delivery is a web application that works on desktop and mobile browsers. A native iOS/Android client is a future client of the same API; native apps are not included in this web implementation.
@@ -10,7 +12,7 @@ The platform contains a responsive public website for Amigos Car Care Qatar, a p
 |---|---|---|
 | Web UI | Next.js App Router, React, TypeScript, responsive CSS | Same application, served over HTTPS/CDN |
 | Backend | Next.js route handlers, Node.js runtime, Zod request validation | Same-origin API routes initially; extract to NestJS only if separate scaling or external API governance is needed |
-| Database | PostgreSQL-compatible schema; embedded PGlite for local development | Managed PostgreSQL 16+ with TLS, backups and point-in-time recovery |
+| Database | MySQL/MariaDB and PostgreSQL adapters; embedded PGlite for local development | Hostinger MariaDB, MySQL 8.0.16+, or managed PostgreSQL 16+ with backups |
 | Authentication | bcrypt password hash, email one-time code, opaque HttpOnly session cookie | Managed identity provider or production SMTP-backed MFA; secrets stored in platform secret manager |
 | Email | Nodemailer SMTP adapter; local development code logs to server terminal | Verified transactional SMTP/email service; delivery alerts and suppression handling |
 | Media | Existing provided photos under `public/assets`; admin raster upload to `public/uploads` locally | Private Azure Blob Storage (or equivalent) behind a CDN; malware scanning, metadata stripping and retention |
