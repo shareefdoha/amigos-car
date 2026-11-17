@@ -144,7 +144,8 @@ async function seed() {
     "phone": "+974 7778 9303",
     "map_url": "https://maps.app.goo.gl/KSdkPuSMBDpsAnjb7?g_st=ic",
     "image_path": "/assets/branch-doha-web.jpg",
-    "sort_order": 1
+    "sort_order": 1,
+    "hours": "7:00 AM – 12:00 AM"
   },
   {
     "slug": "industrial-area",
@@ -153,7 +154,8 @@ async function seed() {
     "phone": "+974 6697 2786",
     "map_url": "https://maps.app.goo.gl/yygJsF6qdyqH35YZ9",
     "image_path": "/assets/branch-industrial-web.jpg",
-    "sort_order": 2
+    "sort_order": 2,
+    "hours": "8:00 AM – 1:00 PM; 4:00 PM – 8:30 PM"
   },
   {
     "slug": "ezdan-wukair",
@@ -162,12 +164,18 @@ async function seed() {
     "phone": "+974 7737 6786",
     "map_url": "https://maps.app.goo.gl/3fGj8tNDxece6XhF7?g_st=ic",
     "image_path": "/assets/branch-wukair-web.jpg",
-    "sort_order": 3
+    "sort_order": 3,
+    "hours": "8:00 AM – 1:00 PM; 4:00 PM – 9:00 PM"
   }
 ]) await insertRow('branches', branch, 'slug');
   await query("UPDATE branches SET phone='+974 7778 9303',map_url='https://maps.app.goo.gl/KSdkPuSMBDpsAnjb7?g_st=ic' WHERE slug='b-ring' AND phone='+974 4444 0000'");
   await query("UPDATE branches SET phone='+974 6697 2786' WHERE slug='industrial-area' AND phone='+974 4466 0000'");
   await query("UPDATE branches SET phone='+974 7737 6786',map_url='https://maps.app.goo.gl/3fGj8tNDxece6XhF7?g_st=ic' WHERE slug='ezdan-wukair' AND phone='+974 4477 0000'");
+  await runMigration('20261117_update_branch_opening_hours', [
+  "UPDATE branches SET hours='7:00 AM – 12:00 AM',updated_at=now() WHERE slug='b-ring' AND hours='8:00 AM – 10:00 PM'",
+  "UPDATE branches SET hours='8:00 AM – 1:00 PM; 4:00 PM – 8:30 PM',updated_at=now() WHERE slug='industrial-area' AND hours='8:00 AM – 10:00 PM'",
+  "UPDATE branches SET hours='8:00 AM – 1:00 PM; 4:00 PM – 9:00 PM',updated_at=now() WHERE slug='ezdan-wukair' AND hours='8:00 AM – 10:00 PM'"
+]);
   const username = process.env.ADMIN_INITIAL_USERNAME; const email = process.env.ADMIN_INITIAL_EMAIL; const password = process.env.ADMIN_INITIAL_PASSWORD;
   if (username && email && password && password !== 'SET_A_NEW_UNIQUE_PASSWORD_HERE') {
     const existing = await query('SELECT id FROM admins WHERE username=$1 OR email=$2', [username,email]);

@@ -31,6 +31,11 @@
     'This branch has no valid WhatsApp number. Please call the branch.':'لا يوجد رقم واتساب صالح لهذا الفرع. يرجى الاتصال بالفرع.',
     'Unable to open WhatsApp. Please call the selected branch.':'تعذر فتح واتساب. يرجى الاتصال بالفرع المحدد.'
   });
+  Object.assign(words,{
+    '7:00 AM – 12:00 AM':'7:00 ص – 12:00 منتصف الليل',
+    '8:00 AM – 1:00 PM; 4:00 PM – 8:30 PM':'8:00 ص – 1:00 م؛ 4:00 م – 8:30 م',
+    '8:00 AM – 1:00 PM; 4:00 PM – 9:00 PM':'8:00 ص – 1:00 م؛ 4:00 م – 9:00 م'
+  });
   // Match translated link labels after decorative text arrows become SVG icons.
   Object.entries(words).forEach(([source,target])=>{
     const label=source.replace(/[↗→←]/g,'').trim();
