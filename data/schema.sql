@@ -137,3 +137,9 @@ CREATE INDEX IF NOT EXISTS offers_public_idx ON offers(status, starts_at, ends_a
 CREATE INDEX IF NOT EXISTS enquiries_kind_status_idx ON enquiries(kind, status, created_at DESC);
 CREATE INDEX IF NOT EXISTS audit_created_idx ON audit_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS analytics_page_time_idx ON analytics_page_views(created_at DESC, page_path);
+
+CREATE TABLE IF NOT EXISTS uploaded_images (
+  id VARCHAR(36) PRIMARY KEY,
+  mime_type VARCHAR(40) NOT NULL,
+  image_base64 TEXT NOT NULL
+);

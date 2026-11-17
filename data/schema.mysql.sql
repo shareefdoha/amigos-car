@@ -143,3 +143,9 @@ CREATE TABLE IF NOT EXISTS analytics_page_views (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO site_settings(id) VALUES(1) ON DUPLICATE KEY UPDATE id=id;
+
+CREATE TABLE IF NOT EXISTS uploaded_images (
+  id VARCHAR(36) PRIMARY KEY,
+  mime_type VARCHAR(40) NOT NULL,
+  image_base64 LONGTEXT NOT NULL
+);

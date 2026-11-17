@@ -111,6 +111,15 @@ try {
   for(const id of [future.id,expired.id,'00000000-0000-4000-8000-000000000000'])assert.equal((await fetch(origin+'/offers/'+id)).status,404);
   const filtered=(await request('/api/public/site')).offers;
   assert.ok(!filtered.some(item=>item.id===future.id||item.id===expired.id));
+  const imageBytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=','base64');
+  const upload=new FormData();upload.set('file',new Blob([imageBytes],{type:'image/png'}),'test.png');
+  const uploaded=await request('/api/admin/upload',{method:'POST',body:upload,status:201});
+  assert.match(uploaded.path,/^\/api\/public\/images\/[a-f0-9-]{36}$/);
+  const imageResponse=await fetch(origin+uploaded.path);assert.equal(imageResponse.status,200);assert.equal(imageResponse.headers.get('content-type'),'image/png');assert.deepEqual(Buffer.from(await imageResponse.arrayBuffer()),imageBytes);
+  assert.equal((await db.query('SELECT image_base64 FROM uploaded_images WHERE id=$1',[uploaded.path.split('/').pop()])).rows[0].image_base64,imageBytes.toString('base64'));
+  const invalidImage=new FormData();invalidImage.set('file',new Blob(['<svg></svg>'],{type:'image/png'}),'invalid.png');
+  await request('/api/admin/upload',{method:'POST',body:invalidImage,status:400});
+  assert.equal((await fetch(origin+'/api/public/images/00000000-0000-4000-8000-000000000000')).status,404);
   const settings=await request('/api/admin/site');
   await request('/api/admin/site',{method:'PUT',body:{...settings,business_name:'MySQL Test Workshop'}});
   assert.equal((await request('/api/public/site')).settings.business_name,'MySQL Test Workshop');
@@ -135,7 +144,7 @@ try {
   assert.equal((await request('/api/admin/analytics')).today,1);
   await request('/api/auth/logout',{method:'POST'});
   await request('/api/admin/enquiries',{status:401});
-  assert.equal(Number((await db.query('SELECT count(*) AS count FROM audit_events')).rows[0].count),10);
+  assert.equal(Number((await db.query('SELECT count(*) AS count FROM audit_events')).rows[0].count),11);
   // Expired sessions must not grant CMS access.
   const admin=(await db.query("SELECT id FROM admins WHERE username='http-test-admin'")).rows[0];
   const expiredToken=randomBytes(32).toString('base64url');
