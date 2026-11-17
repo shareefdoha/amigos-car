@@ -22,9 +22,11 @@ const origin = `http://127.0.0.1:${port}`;
 const password = randomBytes(24).toString('base64url');
 const authSecret = randomBytes(48).toString('hex');
 const production = process.env.TEST_PRODUCTION === 'true';
+const smtpEnabled=!!process.env.TEST_SMTP_PORT;
+const smtpEnv=smtpEnabled?{SMTP_HOST:'127.0.0.1',SMTP_PORT:process.env.TEST_SMTP_PORT,SMTP_USER:'test-smtp-user',SMTP_PASS:'test-smtp-password',SMTP_FROM:'no-reply@example.test'}:{SMTP_HOST:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:''};
 const child = spawn(process.execPath, ['scripts/run-next.mjs', ...(production ? [] : ['--dev'])], {
   cwd: process.cwd(), windowsHide: true,
-  env: {...process.env, NODE_ENV:production?'production':'development',PORT:port,...databaseEnv,ADMIN_INITIAL_USERNAME:'http-test-admin',ADMIN_INITIAL_EMAIL:'http-test@example.com',ADMIN_INITIAL_PASSWORD:password,AUTH_SECRET:authSecret,MAIL_MODE:'smtp',SMTP_HOST:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:''},
+  env: {...process.env, NODE_ENV:production?'production':'development',PORT:port,...databaseEnv,ADMIN_INITIAL_USERNAME:'http-test-admin',ADMIN_INITIAL_EMAIL:'http-test@example.com',ADMIN_INITIAL_PASSWORD:password,AUTH_SECRET:authSecret,MAIL_MODE:'smtp',...smtpEnv,BOOKING_NOTIFICATION_EMAIL:'appointments@example.test'},
   stdio:['ignore','pipe','pipe'],
 });
 let output = '';
@@ -94,6 +96,7 @@ try {
   assert.equal((await request('/api/public/site')).settings.business_name,'MySQL Test Workshop');
   const booking=await request('/api/public/enquiries',{method:'POST',status:201,body:{kind:'booking',contact_name:'HTTP test',email:'test@example.com',message:'Please book an oil change.'}});
   assert.match(booking.reference,/^[a-f0-9-]{36}$/);
+  assert.equal(booking.notified,smtpEnabled);
   const business=new FormData();
   for(const [key,value] of Object.entries({company:'Test company',type:'Fleet',name:'Test contact',email:'test@example.com',phone:'+97412345678',subject:'Business enquiry',message:'This is a test business enquiry message.',consent:'yes'}))business.set(key,value);
   await request('/api/public/business',{method:'POST',body:business,status:201});
@@ -103,6 +106,7 @@ try {
   await request('/api/public/careers',{method:'POST',body:career,status:201});
   const inbox=await request('/api/admin/enquiries');
   assert.equal(inbox.length,3);
+  assert.equal(inbox.find(item=>item.kind==='booking').notification_sent,smtpEnabled);
   const cv=inbox.find(item=>item.kind==='career').metadata.cv;
   attachments.push(path.join(process.cwd(),'data','private-cv',path.basename(cv.fileName)));
   const download=await fetch(origin+`/api/admin/enquiries?attachment=${inbox.find(item=>item.kind==='career').id}`,{headers:{cookie}});
