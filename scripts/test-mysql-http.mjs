@@ -84,7 +84,7 @@ try {
   for (const [collection,body] of [
     ['services',{slug:'http-service',title_en:'HTTP service',summary_en:'Service test',details_en:['اختبار'],image_path:'/assets/oil-change-web.jpg',active:false}],
     ['branches',{slug:'http-branch',name_en:'HTTP branch',address_en:'Doha Qatar'}],
-    ['offers',{title_en:'HTTP offer',description_en:'Offer test',discount:'15 %',starts_at:toQatarDateTimeInput(offerStart),ends_at:toQatarDateTimeInput(offerEnd),status:'published',branch_slug:'b-ring',promo_code:'NATIONAL26',terms_en:'Test offer terms'}],
+    ['offers',{title_en:'HTTP offer',description_en:'Offer test',title_ar:'عرض التجربة',description_ar:'وصف العرض',terms_ar:'شروط العرض',discount:'15 %',starts_at:toQatarDateTimeInput(offerStart),ends_at:toQatarDateTimeInput(offerEnd),status:'published',branch_slug:'b-ring',promo_code:'NATIONAL26',terms_en:'Test offer terms'}],
   ]) {
     const created=await request(`/api/admin/${collection}`,{method:'POST',body,status:201});
     const changed=await request(`/api/admin/${collection}`,{method:'PUT',body:{id:created.id,...(collection==='branches'?{name_en:'Updated branch'}:{title_en:'Updated item'})}});
@@ -102,7 +102,7 @@ try {
       const page=await fetch(origin+'/offers/'+created.id);assert.equal(page.status,200);
       const html=await page.text();assert.ok(html.includes('property="og:image"'));assert.ok(html.includes('property="og:title"'));assert.ok(html.includes('facebook.com/sharer/sharer.php'));
       const visible=(await request('/api/public/site')).offers.find(item=>item.id===created.id);
-      assert.ok(visible);assert.equal(visible.branch_slug,'b-ring');assert.equal(visible.promo_code,'NATIONAL26');assert.equal(visible.terms_en,'Test offer terms');
+      assert.ok(visible);assert.equal(visible.branch_slug,'b-ring');assert.equal(visible.promo_code,'NATIONAL26');assert.equal(visible.terms_en,'Test offer terms');assert.equal(visible.title_ar,'عرض التجربة');assert.equal(visible.description_ar,'وصف العرض');assert.equal(visible.terms_ar,'شروط العرض');
     }
     await request(`/api/admin/${collection}?id=${created.id}`,{method:'DELETE'});
   }

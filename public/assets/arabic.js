@@ -42,6 +42,15 @@
     'Loading offers…':'جارٍ تحميل العروض…',
     'Unable to load offers. Please refresh the page.':'تعذر تحميل العروض. يرجى تحديث الصفحة.'
   });
+  Object.assign(words,{
+    'OFFERS, READY FOR THE ROAD':'عروض جاهزة للطريق',
+    'Good care.':'عناية متميزة.',
+    'Good value.':'قيمة أفضل.',
+    'Explore current service promotions from Amigos Car Care. Offer dates and branch conditions apply.':'اكتشف عروض الخدمات الحالية من أميغوس للعناية بالسيارات. تسري تواريخ العرض وشروط الفرع.',
+    'B-Ring · Doha':'الحلقة B · الدوحة',
+    'Offers from Amigos Car Care':'عروض أميغوس للعناية بالسيارات',
+    'All offers':'جميع العروض'
+  });
   // Match translated link labels after decorative text arrows become SVG icons.
   Object.entries(words).forEach(([source,target])=>{
     const label=source.replace(/[↗→←]/g,'').trim();
@@ -53,6 +62,7 @@
   document.head.appendChild(rtlStyle);
   function translate(ar) {
     document.querySelectorAll('body *').forEach(el => {
+      if(el.closest('[data-localized]')) return;
       let savedAttrs=originalAttributes.get(el); if(!savedAttrs){savedAttrs={};originalAttributes.set(el,savedAttrs)}
       attrs.forEach(attr => {
         if (!el.hasAttribute(attr)) return;
@@ -61,7 +71,7 @@
         if (words[base]) { const value=ar?words[base]:base; if(el.getAttribute(attr)!==value) el.setAttribute(attr,value); }
       });
     });
-    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement&&!['SCRIPT','STYLE'].includes(n.parentElement.tagName)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT});
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement&&!n.parentElement.closest('[data-localized]')&&!['SCRIPT','STYLE'].includes(n.parentElement.tagName)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT});
     const phrases=Object.keys(words).sort((a,b)=>b.length-a.length);
     for(let n; (n=walker.nextNode());){ if(!original.has(n)) original.set(n,n.nodeValue); const base=original.get(n); let value=base; if(ar){for(const phrase of phrases)if(value.includes(phrase))value=value.split(phrase).join(words[phrase]);const count=value.match(/(\d{2})–(\d{2}) of (\d+)/);if(count)value=value.replace(count[0],`${count[1]}–${count[2]} من ${count[3]}`);} if(n.nodeValue!==value)n.nodeValue=value; }
     document.documentElement.lang = ar ? 'ar' : 'en';
