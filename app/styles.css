@@ -73,3 +73,16 @@
 @media(max-width:760px){.booking{padding:42px 18px}.booking-shell{grid-template-columns:1fr;gap:12px}.booking-aside{grid-template-rows:250px auto}.booking-aside-photo{min-height:250px;padding:22px}.booking-aside-copy h2{font-size:30px}.booking-contact{padding:15px 18px}.booking-panel{padding:26px 19px 21px}.booking-form-grid{grid-template-columns:1fr;gap:13px}.booking-form-grid .booking-notes,.booking-submit{grid-column:auto}.booking-submit{align-items:stretch;flex-direction:column}.booking-submit .button{width:100%}}
 
 .footer-bottom{display:grid;gap:15px}.social-links{display:flex;align-items:center;gap:10px;color:#dce4ef}.social-links>span{font-size:11px;color:#aab6c7;margin-right:4px}.social-links a{display:grid;place-items:center;width:34px;height:34px;border:1px solid #ffffff35;border-radius:50%;color:#dce4ef;transition:background .18s,color .18s,border-color .18s,transform .18s}.social-links a:hover{background:var(--orange);color:#fff;border-color:var(--orange);transform:translateY(-2px)}.social-links svg{width:17px;height:17px}.footer-bottom .copyright{margin-top:0}@media(max-width:760px){.social-links{justify-content:flex-start}}
+
+/* SVG interface icons render consistently on iOS without emoji fallback. */
+.ui-icon{display:inline-block;flex-shrink:0;width:1em;height:1em;vertical-align:-.15em;pointer-events:none}
+.button .ui-icon{width:18px;height:18px;flex:0 0 18px}
+.hero-proof>span{display:inline-flex;align-items:center;gap:5px}
+.hero-proof .ui-icon{width:13px;height:13px}
+.menu-toggle .ui-icon{display:block;width:17px;height:17px}
+.service-controls button,.standard-slider>button{display:inline-flex;align-items:center;justify-content:center}
+.service-controls .ui-icon,.standard-slider>button .ui-icon{width:20px;height:20px}
+.service-search .ui-icon{width:17px;height:17px}
+html[dir=rtl] .ui-icon[data-directional=true]{transform:scaleX(-1)}
+
+@media(max-width:480px){.hero .actions .button{gap:10px;padding:14px 16px;white-space:nowrap}}

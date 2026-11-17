@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.11",
-    "@next/env": "16.4.3",
+    "@next/env": "16.4.6",
     "bcryptjs": "latest",
     "mysql2": "^3.24.6",
-    "next": "16.4.3",
+    "next": "16.4.6",
     "nodemailer": "10.2.1",
     "pg": "latest",
     "react": "latest",
