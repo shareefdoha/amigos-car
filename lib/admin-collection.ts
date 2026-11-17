@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { audit, bad, currentAdmin } from '@/lib/auth';
 import { query, insertRow } from '@/lib/db';
+import { qatarDateTimeToIso } from '@/lib/offer-dates.mjs';
 
 type Collection = 'services' | 'branches' | 'offers';
 const fields: Record<Collection, string[]> = {
@@ -11,7 +12,9 @@ const fields: Record<Collection, string[]> = {
 const slug = z.string().min(1).max(100).regex(/^[a-z0-9-]+$/);
 const date = z.preprocess((value) => {
   if (value === '' || value === undefined) return null;
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return new Date(value).toISOString();
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+    try { return qatarDateTimeToIso(value); } catch { return value; }
+  }
   return value;
 }, z.string().datetime({ offset: true }).nullable().optional());
 const service = z.object({ slug, title_en:z.string().min(2).max(160), title_ar:z.string().max(160).optional(), summary_en:z.string().min(2).max(600), summary_ar:z.string().max(600).optional(), details_en:z.array(z.string().max(500)).optional(), details_ar:z.array(z.string().max(500)).optional(), image_path:z.string().max(300), gallery_images:z.array(z.string().max(300)).max(12).optional(), sort_order:z.number().int().min(0).max(999).optional(), active:z.boolean().optional() });

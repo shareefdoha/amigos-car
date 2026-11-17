@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {qatarDateTimeToIso,toQatarDateTimeInput,offerVisibilityLabel,formatQatarDateTime} from '../lib/offer-dates.mjs';
+assert.equal(qatarDateTimeToIso('2026-11-17T13:38'),'2026-11-17T10:38:00.000Z');
+assert.equal(toQatarDateTimeInput('2026-11-17T10:38:00.000Z'),'2026-11-17T13:38');
+assert.equal(qatarDateTimeToIso('2026-11-18T00:15'),'2026-11-17T21:15:00.000Z');
+assert.equal(toQatarDateTimeInput('2026-11-17T21:15:00.000Z'),'2026-11-18T00:15');
+assert.equal(qatarDateTimeToIso('2028-02-29T13:00'),'2028-02-29T10:00:00.000Z');
+for(const value of ['2026-02-29T12:00','2026-02-30T12:00','2026-11-17T24:00','invalid'])assert.throws(()=>qatarDateTimeToIso(value),/valid Qatar/);
+for(const value of ['',null,undefined,'invalid'])assert.equal(toQatarDateTimeInput(value),'');
+const now=new Date('2026-11-17T11:00:00Z');
+assert.match(offerVisibilityLabel({status:'published',starts_at:'2026-11-17T10:38:00Z',ends_at:'2026-11-19T10:38:00Z'},now),/visible now/);
+assert.match(offerVisibilityLabel({status:'published',starts_at:'2026-11-17T13:38:00Z'},now),/starts/);
+assert.match(offerVisibilityLabel({status:'published',ends_at:'2026-11-17T10:00:00Z'},now),/ended/);
+assert.equal(offerVisibilityLabel({status:'draft'},now),'draft');
+assert.ok(formatQatarDateTime('2026-11-17T10:38:00Z').includes('01:38'));
+console.log('Offer date checks passed: Qatar/UTC round trips, midnight boundaries, invalid dates and publication status.');

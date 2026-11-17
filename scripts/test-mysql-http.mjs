@@ -4,6 +4,7 @@ import { randomBytes, createHmac } from 'node:crypto';
 import { unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { createDatabase } from './database.mjs';
+import { toQatarDateTimeInput } from '../lib/offer-dates.mjs';
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url || !/^amigos_test_[a-z0-9_]+$/.test(new URL(url).pathname.slice(1))) throw new Error('Use a disposable amigos_test_* database.');
@@ -21,12 +22,14 @@ const port = process.env.TEST_PORT || '3101';
 const origin = `http://127.0.0.1:${port}`;
 const password = randomBytes(24).toString('base64url');
 const authSecret = randomBytes(48).toString('hex');
+const offerStart=new Date(Math.floor(Date.now()/60000)*60000-60000);
+const offerEnd=new Date(offerStart.getTime()+86400000);
 const production = process.env.TEST_PRODUCTION === 'true';
 const smtpEnabled=!!process.env.TEST_SMTP_PORT;
 const smtpEnv=smtpEnabled?{SMTP_HOST:'127.0.0.1',SMTP_PORT:process.env.TEST_SMTP_PORT,SMTP_USER:'test-smtp-user',SMTP_PASS:'test-smtp-password',SMTP_FROM:'no-reply@example.test'}:{SMTP_HOST:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:''};
 const child = spawn(process.execPath, ['scripts/run-next.mjs', ...(production ? [] : ['--dev'])], {
   cwd: process.cwd(), windowsHide: true,
-  env: {...process.env, NODE_ENV:production?'production':'development',PORT:port,...databaseEnv,ADMIN_INITIAL_USERNAME:'http-test-admin',ADMIN_INITIAL_EMAIL:'http-test@example.com',ADMIN_INITIAL_PASSWORD:password,AUTH_SECRET:authSecret,MAIL_MODE:'smtp',...smtpEnv,BOOKING_NOTIFICATION_EMAIL:'appointments@example.test'},
+  env: {...process.env, NODE_ENV:production?'production':'development',TZ:'UTC',PORT:port,...databaseEnv,ADMIN_INITIAL_USERNAME:'http-test-admin',ADMIN_INITIAL_EMAIL:'http-test@example.com',ADMIN_INITIAL_PASSWORD:password,AUTH_SECRET:authSecret,MAIL_MODE:'smtp',...smtpEnv,BOOKING_NOTIFICATION_EMAIL:'appointments@example.test'},
   stdio:['ignore','pipe','pipe'],
 });
 let output = '';
@@ -81,16 +84,25 @@ try {
   for (const [collection,body] of [
     ['services',{slug:'http-service',title_en:'HTTP service',summary_en:'Service test',details_en:['اختبار'],image_path:'/assets/oil-change-web.jpg',active:false}],
     ['branches',{slug:'http-branch',name_en:'HTTP branch',address_en:'Doha Qatar'}],
-    ['offers',{title_en:'HTTP offer',description_en:'Offer test',starts_at:'2026-01-01T00:00:00Z',ends_at:null,status:'published'}],
+    ['offers',{title_en:'HTTP offer',description_en:'Offer test',starts_at:toQatarDateTimeInput(offerStart),ends_at:toQatarDateTimeInput(offerEnd),status:'published',branch_slug:'b-ring',promo_code:'NATIONAL26',terms_en:'Test offer terms'}],
   ]) {
     const created=await request(`/api/admin/${collection}`,{method:'POST',body,status:201});
     const changed=await request(`/api/admin/${collection}`,{method:'PUT',body:{id:created.id,...(collection==='branches'?{name_en:'Updated branch'}:{title_en:'Updated item'})}});
     assert.equal(changed.id,created.id);
     assert.ok((await request(`/api/admin/${collection}`)).some(item=>item.id===created.id));
     if(collection==='services'){assert.equal(changed.active,false);assert.deepEqual(changed.details_en,['اختبار']);}
-    if(collection==='offers')assert.ok((await request('/api/public/site')).offers.some(item=>item.id===created.id));
+    if(collection==='offers'){
+      assert.equal(created.starts_at,offerStart.toISOString());
+      assert.equal(created.ends_at,offerEnd.toISOString());
+      const visible=(await request('/api/public/site')).offers.find(item=>item.id===created.id);
+      assert.ok(visible);assert.equal(visible.branch_slug,'b-ring');assert.equal(visible.promo_code,'NATIONAL26');assert.equal(visible.terms_en,'Test offer terms');
+    }
     await request(`/api/admin/${collection}?id=${created.id}`,{method:'DELETE'});
   }
+  const future=await db.insert('offers',{title_en:'Future test offer',description_en:'Test',status:'published',starts_at:new Date(Date.now()+86400000)});
+  const expired=await db.insert('offers',{title_en:'Expired test offer',description_en:'Test',status:'published',ends_at:new Date(Date.now()-86400000)});
+  const filtered=(await request('/api/public/site')).offers;
+  assert.ok(!filtered.some(item=>item.id===future.id||item.id===expired.id));
   const settings=await request('/api/admin/site');
   await request('/api/admin/site',{method:'PUT',body:{...settings,business_name:'MySQL Test Workshop'}});
   assert.equal((await request('/api/public/site')).settings.business_name,'MySQL Test Workshop');

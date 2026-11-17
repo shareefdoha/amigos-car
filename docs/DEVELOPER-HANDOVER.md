@@ -240,3 +240,7 @@ If a release fails, route traffic back to the last known good release and inspec
 ## Ownership summary
 
 The developers own source code, API behavior, deploy configuration, database migrations, and security controls. Authorized content administrators own published copy, offers, and imagery entered in the CMS. Keep source changes and CMS database content distinct, back up both code and data, and promote changes through staging before production.
+
+## Offer scheduling timezone
+
+Offer start/end fields use Qatar time (UTC+3). The API converts timezone-free form values explicitly from Qatar time and accepts ISO timestamps with offsets from integrations. Stored dates are UTC. Existing dates are converted back to Qatar time for editing. Published offers appear only while their validity window is active; the CMS shows scheduled, expired, or visible status.
