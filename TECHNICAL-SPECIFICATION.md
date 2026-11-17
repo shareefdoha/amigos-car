@@ -1,6 +1,6 @@
 # Amigos Car Care — Full-Stack Technical Specification
 
-**Hostinger database update:** MySQL 8.0.16+ and MariaDB 10.6+ are supported alongside PostgreSQL/PGlite. Import `data/schema.mysql.sql` for phpMyAdmin, set `DATABASE_URL=mysql://...`, and follow `docs/HOSTINGER-MYSQL.md`. Database logic is shared in `scripts/database.mjs` and exposed to routes by `lib/db.ts`. The original `data/schema.sql` remains PostgreSQL-only.
+**Hostinger database update:** MySQL 8.0.16+ and MariaDB 10.6+ are supported alongside PostgreSQL/PGlite. Import `data/schema.mysql.sql` for phpMyAdmin, set `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD`, and follow `docs/HOSTINGER-MYSQL.md`. Database logic is shared in `scripts/database.mjs` and exposed to routes by `lib/db.ts`. The original `data/schema.sql` remains PostgreSQL-only.
 
 ## 1. Product scope
 

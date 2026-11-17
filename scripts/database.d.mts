@@ -8,3 +8,8 @@ export type Database = {
 };
 export function createDatabase(env?: NodeJS.ProcessEnv): Promise<Database>;
 export function mysqlStatement(sql: string, params?: unknown[]): { statement: string; values: unknown[] };
+
+export function resolveDatabaseConfig(env?: NodeJS.ProcessEnv):
+  | { dialect:'mysql'; options:{host:string;port:number;database:string;user:string;password:string;ssl?:{rejectUnauthorized:boolean}} }
+  | { dialect:'postgres';url:string;ssl?:{rejectUnauthorized:boolean} }
+  | { dialect:'pglite' };

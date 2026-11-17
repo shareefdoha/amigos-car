@@ -13,9 +13,9 @@ The public chat currently uses a client-side guided automotive knowledge flow. I
 3. Admin sign-in uses username and password. SMTP is optional and is used only for enquiry notifications.
 4. Run `pnpm install`, then `pnpm dev`, and open `http://localhost:3000`.
 
-Without `DATABASE_URL`, local development uses an embedded PGlite PostgreSQL-compatible database stored under `data/local-db`. For production, set `DATABASE_URL` to MySQL 8.0.16+, MariaDB 10.6+, or managed PostgreSQL 16+. MySQL/MariaDB URLs start with `mysql://` (or `mariadb://`), and PostgreSQL URLs start with `postgresql://`. Set `DATABASE_SSL=true` only when the provider requires TLS and its certificate chain is trusted. Database tables are created on first API request. Seeded service and branch records are inserted idempotently.
+Without `DATABASE_URL`, local development uses an embedded PGlite PostgreSQL-compatible database stored under `data/local-db`. For Hostinger MySQL/MariaDB, set `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` separately. Use the original password without URL encoding. MySQL 8.0.16+, MariaDB 10.6+, and managed PostgreSQL 16+ are supported. Legacy `DATABASE_URL` configurations also remain supported. MySQL/MariaDB URLs start with `mysql://` (or `mariadb://`), and PostgreSQL URLs start with `postgresql://`. Set `DATABASE_SSL=true` only when the provider requires TLS and its certificate chain is trusted. Database tables are created on first API request. Seeded service and branch records are inserted idempotently.
 
-For Hostinger, follow [the MySQL setup guide](docs/HOSTINGER-MYSQL.md) and import **`data/schema.mysql.sql`** in phpMyAdmin. `data/schema.sql` is for PostgreSQL/PGlite only. The connection URL selects the matching database adapter and schema automatically.
+For Hostinger, follow [the MySQL setup guide](docs/HOSTINGER-MYSQL.md) and import **`data/schema.mysql.sql`** in phpMyAdmin. `data/schema.sql` is for PostgreSQL/PGlite only. The separate MySQL settings (or a legacy connection URL) select the matching adapter and schema automatically.
 
 ## Admin CMS
 

@@ -2,15 +2,31 @@ import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { createDatabase, mysqlStatement } from './database.mjs';
+import { createDatabase, mysqlStatement, resolveDatabaseConfig } from './database.mjs';
 
 // Opt in to a dedicated, disposable MySQL database. Never use production/local app data.
 const url = process.env.TEST_DATABASE_URL;
 if (url && !/^amigos_test_[a-z0-9_]+$/.test(new URL(url).pathname.slice(1))) {
   throw new Error('TEST_DATABASE_URL must name a disposable amigos_test_* database.');
 }
+const rawPassword = String.raw`p@ss:#;\~'"word`;
+const separate = {NODE_ENV:'production',DB_HOST:'db.example.test',DB_NAME:'test_db',DB_USER:'test_user',DB_PASSWORD:rawPassword};
+assert.equal(resolveDatabaseConfig(separate).options.password,rawPassword);
+assert.equal(resolveDatabaseConfig(separate).options.port,3306);
+assert.equal(resolveDatabaseConfig({...separate,DB_PORT:'3307'}).options.port,3307);
+assert.equal(resolveDatabaseConfig({...separate,DATABASE_URL:'not-a-url'}).dialect,'mysql');
+assert.throws(()=>resolveDatabaseConfig({DB_HOST:'localhost',DATABASE_URL:'mysql://user:pass@host/db'}),/DB_NAME/);
+for(const port of ['0','65536','not-a-port','1e3'])assert.throws(()=>resolveDatabaseConfig({...separate,DB_PORT:port}),/DB_PORT/);
+assert.throws(()=>resolveDatabaseConfig({NODE_ENV:'production'}),/DB_HOST/);
+assert.equal(resolveDatabaseConfig({DATABASE_URL:'postgresql://user:pass@host/db'}).dialect,'postgres');
+assert.equal(resolveDatabaseConfig({}).dialect,'pglite');
+assert.equal(resolveDatabaseConfig({DATABASE_URL:'postgresql://user:pass@host/db',DATABASE_SSL:'true',DB_SSL:'false'}).ssl.rejectUnauthorized,true);
+assert.equal(resolveDatabaseConfig({...separate,DB_SSL:'true'}).options.ssl.rejectUnauthorized,true);
+assert.equal(resolveDatabaseConfig({...separate,DB_SSL:'false',DATABASE_SSL:'true'}).options.ssl,undefined);
+const testUri = url ? new URL(url) : null;
+const splitEnv = process.env.TEST_SEPARATE_DB === 'true' && testUri ? {DATABASE_URL:'',DB_HOST:testUri.hostname,DB_PORT:testUri.port||'3306',DB_NAME:decodeURIComponent(testUri.pathname.slice(1)),DB_USER:decodeURIComponent(testUri.username),DB_PASSWORD:decodeURIComponent(testUri.password)} : {};
 const db = await createDatabase({
-  NODE_ENV: 'test', DATABASE_URL: url || '', DATABASE_SSL: process.env.TEST_DATABASE_SSL || 'false',
+  NODE_ENV: 'test', DATABASE_URL: url || '', DATABASE_SSL: process.env.TEST_DATABASE_SSL || 'false', ...splitEnv,
   LOCAL_DATABASE_PATH: path.join(await mkdtemp(path.join(tmpdir(), 'amigos-db-test-')), 'pglite'),
 });
 try {

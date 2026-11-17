@@ -2,7 +2,7 @@
 
 **Sign-in update:** Admin access now uses username and password only; SMTP is optional for enquiry notifications. The older Word/PDF copies still describe email verification.
 
-**Hostinger update:** The current source also supports MySQL 8.0.16+ / MariaDB 10.6+. Use `data/schema.mysql.sql`, a `mysql://` database URL, and `docs/HOSTINGER-MYSQL.md`. `scripts/database.mjs` contains the shared adapter used by the web app and CLI tools. The Word/PDF copies predate this database update; use the current Markdown instructions for Hostinger.
+**Hostinger update:** The current source also supports MySQL 8.0.16+ / MariaDB 10.6+. Use `data/schema.mysql.sql`, separate `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` values, and `docs/HOSTINGER-MYSQL.md`. `scripts/database.mjs` contains the shared adapter used by the web app and CLI tools. The Word/PDF copies predate this database update; use the current Markdown instructions for Hostinger.
 
 **Purpose:** explain the delivered web application, its structure, configuration, local workflow, hosting procedure, and production boundaries so a development team can take ownership.
 

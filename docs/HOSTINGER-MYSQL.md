@@ -10,7 +10,7 @@ Importing SQL alone does not create the admin account. The app creates default c
 
 ## 2. Environment variables
 
-Set these in the Node.js application's hosting environment, using the actual host, database name, username and password shown by Hostinger:
+Add each setting as a separate row in the Node.js application's hosting environment. Use the actual host, database name, username and password shown by Hostinger:
 
 ```dotenv
 NODE_ENV=production
@@ -28,9 +28,11 @@ SMTP_PASS=YOUR_MAILBOX_PASSWORD
 SMTP_FROM="Amigos Car Care <YOUR_MAILBOX_ADDRESS>"
 ```
 
-Percent-encode special characters in the username/password part of `DATABASE_URL`. For example, `@` becomes `%40`, `#` becomes `%23`, and `/` becomes `%2F`. Keep the raw mailbox password in `SMTP_PASS`, not the encoded database password. Enable `DATABASE_SSL=true` only when the database endpoint supports/requires TLS with a trusted certificate. Use the hostname supplied for your deployment; do not assume `localhost` when the Node.js app and database run on different hosts. External connections may require Hostinger remote-database access configuration.
+Enter the original database password directly in `DB_PASSWORD`; no URL encoding is needed. In a private `.env` file, quote passwords containing `#` or spaces so the full value is retained. In the Hostinger environment panel, enter the password directly without adding quotes. `DB_NAME` is required in addition to the host, port, user and password. Enable `DB_SSL=true` only when the database endpoint supports/requires TLS with a trusted certificate. Use the hostname supplied for your deployment; do not assume `localhost` when the Node.js app and database run on different hosts. External connections may require Hostinger remote-database access configuration.
 
-Leave `PORT` to the hosting platform. The start script listens on its assigned port and all interfaces. Keep `.env.hostinger` private and out of Git. Next.js does not load that filename automatically: copy the values into hosting environment settings or a private production `.env` file. Do not upload your local `.env.local`, because it can override production values and contains local-only settings.
+Complete separate `DB_*` settings take precedence over `DATABASE_URL`. Remove the old `DATABASE_URL` setting from Hostinger when switching to separate values. A partially filled set of database values reports a configuration error rather than silently using another database. The legacy URL format remains supported when all separate connection fields are empty.
+
+`DB_PORT` is the database port (normally 3306). Leave the application's `PORT` to the hosting platform. The start script listens on its assigned port and all interfaces. Keep `.env.hostinger` private and out of Git. Next.js does not load that filename automatically: copy the values into hosting environment settings or a private production `.env` file. Do not upload your local `.env.local`, because it can override production values and contains local-only settings.
 
 ## 3. Build and start
 
@@ -42,7 +44,7 @@ The application creates missing tables on connection. No existing local data is 
 
 ## Verification
 
-Run `pnpm check`, `pnpm build`, and `pnpm test:db` for type/build checks and disposable PGlite integration coverage. To test a real MySQL/MariaDB server, create a new disposable database named `amigos_test_*`, set `TEST_DATABASE_URL` to its URL, and run `node scripts/test-database.mjs`. Use a separate fresh test database with `node scripts/test-mysql-http.mjs` for full HTTP/password-sign-in/CMS/form coverage. Stop the normal development server before the HTTP test because Next.js uses one development build directory. These test scripts refuse database names outside `amigos_test_*` and do not read your production environment file.
+Run `pnpm check`, `pnpm build`, and `pnpm test:db` for type/build checks and disposable PGlite integration coverage. To test a real MySQL/MariaDB server, create a new disposable database named `amigos_test_*`, set `TEST_DATABASE_URL` to its URL, and run `node scripts/test-database.mjs`. Set `TEST_SEPARATE_DB=true` to exercise separate MySQL settings. Use a separate fresh test database with `node scripts/test-mysql-http.mjs` for full HTTP/password-sign-in/CMS/form coverage. Stop the normal development server before the HTTP test because Next.js uses one development build directory. These test scripts refuse database names outside `amigos_test_*` and do not read your production environment file.
 
 ## Official references
 

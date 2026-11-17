@@ -7,6 +7,16 @@ import { createDatabase } from './database.mjs';
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url || !/^amigos_test_[a-z0-9_]+$/.test(new URL(url).pathname.slice(1))) throw new Error('Use a disposable amigos_test_* database.');
+const uri = new URL(url);
+const useSeparate = process.env.TEST_SEPARATE_DB === 'true';
+const databaseEnv = {
+  DATABASE_URL:useSeparate?'':url,
+  DATABASE_SSL:'false',
+  DB_HOST:useSeparate?uri.hostname:'',DB_PORT:useSeparate?(uri.port||'3306'):'',
+  DB_NAME:useSeparate?decodeURIComponent(uri.pathname.slice(1)):'',
+  DB_USER:useSeparate?decodeURIComponent(uri.username):'',
+  DB_PASSWORD:useSeparate?decodeURIComponent(uri.password):'',DB_SSL:'false',
+};
 const port = process.env.TEST_PORT || '3101';
 const origin = `http://127.0.0.1:${port}`;
 const password = randomBytes(24).toString('base64url');
@@ -14,7 +24,7 @@ const authSecret = randomBytes(48).toString('hex');
 const production = process.env.TEST_PRODUCTION === 'true';
 const child = spawn(process.execPath, ['scripts/run-next.mjs', ...(production ? [] : ['--dev'])], {
   cwd: process.cwd(), windowsHide: true,
-  env: {...process.env, NODE_ENV:production?'production':'development',PORT:port,DATABASE_URL:url,DATABASE_SSL:'false',ADMIN_INITIAL_USERNAME:'http-test-admin',ADMIN_INITIAL_EMAIL:'http-test@example.com',ADMIN_INITIAL_PASSWORD:password,AUTH_SECRET:authSecret,MAIL_MODE:'smtp',SMTP_HOST:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:''},
+  env: {...process.env, NODE_ENV:production?'production':'development',PORT:port,...databaseEnv,ADMIN_INITIAL_USERNAME:'http-test-admin',ADMIN_INITIAL_EMAIL:'http-test@example.com',ADMIN_INITIAL_PASSWORD:password,AUTH_SECRET:authSecret,MAIL_MODE:'smtp',SMTP_HOST:'',SMTP_USER:'',SMTP_PASS:'',SMTP_FROM:''},
   stdio:['ignore','pipe','pipe'],
 });
 let output = '';
@@ -46,7 +56,7 @@ const request = async (endpoint, {method='GET',body,status=200}={}) => {
   }
   return value;
 };
-const db = await createDatabase({DATABASE_URL:url,DATABASE_SSL:'false'});
+const db = await createDatabase(databaseEnv);
 const attachments = [];
 try {
   await waitFor(() => output.includes('Amigos platform ready'));

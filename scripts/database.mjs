@@ -35,20 +35,39 @@ function normalizeRows(rows) {
   });
 }
 
-export async function createDatabase(env = process.env) {
+export function resolveDatabaseConfig(env = process.env) {
+  const keys = ['DB_HOST','DB_PORT','DB_NAME','DB_USER','DB_PASSWORD'];
+  const separate = keys.some(key => env[key] !== undefined && env[key] !== '');
+  const ssl = env.DATABASE_SSL === 'true' ? { rejectUnauthorized:true } : undefined;
+  if (separate) {
+    const missing = ['DB_HOST','DB_NAME','DB_USER','DB_PASSWORD'].filter(key => !env[key]);
+    if (missing.length) throw new Error('Missing MySQL settings: ' + missing.join(', ') + '.');
+    const rawPort = env.DB_PORT || '3306';
+    const port = Number(rawPort);
+    if (!/^\d+$/.test(rawPort) || port < 1 || port > 65535) throw new Error('DB_PORT must be an integer from 1 to 65535.');
+    return { dialect:'mysql', options:{host:env.DB_HOST,port,database:env.DB_NAME,user:env.DB_USER,password:env.DB_PASSWORD,ssl:(env.DB_SSL || env.DATABASE_SSL) === 'true' ? {rejectUnauthorized:true} : undefined} };
+  }
   const url = env.DATABASE_URL;
-  const isMysql = url?.startsWith('mysql://') || url?.startsWith('mariadb://');
-  if (url && !isMysql && !/^postgres(?:ql)?:\/\//.test(url)) throw new Error('DATABASE_URL must use mysql://, mariadb:// or postgresql://.');
-  if (!url && env.NODE_ENV === 'production') throw new Error('DATABASE_URL is required in production.');
+  if (url?.startsWith('mysql://') || url?.startsWith('mariadb://')) {
+    const uri = new URL(url);
+    return { dialect:'mysql', options:{host:uri.hostname,port:Number(uri.port || 3306),user:decodeURIComponent(uri.username),password:decodeURIComponent(uri.password),database:decodeURIComponent(uri.pathname.slice(1)),ssl} };
+  }
+  if (url) {
+    if (!/^postgres(?:ql)?:\/\//.test(url)) throw new Error('DATABASE_URL must use mysql://, mariadb:// or postgresql://.');
+    return { dialect:'postgres', url, ssl };
+  }
+  if (env.NODE_ENV === 'production') throw new Error('Configure DB_HOST, DB_NAME, DB_USER and DB_PASSWORD for production, or provide DATABASE_URL.');
+  return { dialect:'pglite' };
+}
+
+export async function createDatabase(env = process.env) {
+  const config = resolveDatabaseConfig(env);
+  const isMysql = config.dialect === 'mysql';
   let query, transaction, close;
   if (isMysql) {
-    const uri = new URL(url);
     const pool = mysql.createPool({
-      host: uri.hostname, port: Number(uri.port || 3306),
-      user: decodeURIComponent(uri.username), password: decodeURIComponent(uri.password),
-      database: decodeURIComponent(uri.pathname.slice(1)),
-      ssl: env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
-      charset: 'utf8mb4', timezone: 'Z', connectionLimit: 10, multipleStatements: false,
+      ...config.options,
+      charset:'utf8mb4',timezone:'Z',connectionLimit:10,multipleStatements:false,
     });
     const run = async (connection, sql, params = []) => {
       const { statement, values } = mysqlStatement(sql, params);
@@ -77,8 +96,8 @@ export async function createDatabase(env = process.env) {
       finally { connection.release(); }
     };
     close = () => pool.end();
-  } else if (url) {
-    const pool = new pg.Pool({ connectionString: url, ssl: env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : undefined, max: 10 });
+  } else if (config.dialect === 'postgres') {
+    const pool = new pg.Pool({ connectionString:config.url, ssl:config.ssl, max:10 });
     const run = async (client, sql, params = []) => {
       const result = await client.query(sql, params);
       return { rows: result.rows, rowCount: result.rowCount ?? 0 };
