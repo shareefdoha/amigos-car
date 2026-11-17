@@ -19,13 +19,17 @@ const date = z.preprocess((value) => {
 }, z.string().datetime({ offset: true }).nullable().optional());
 const service = z.object({ slug, title_en:z.string().min(2).max(160), title_ar:z.string().max(160).optional(), summary_en:z.string().min(2).max(600), summary_ar:z.string().max(600).optional(), details_en:z.array(z.string().max(500)).optional(), details_ar:z.array(z.string().max(500)).optional(), image_path:z.string().max(300), gallery_images:z.array(z.string().max(300)).max(12).optional(), sort_order:z.number().int().min(0).max(999).optional(), active:z.boolean().optional() });
 const branch = z.object({ slug, name_en:z.string().min(2).max(160), name_ar:z.string().max(160).optional(), address_en:z.string().min(2).max(300), address_ar:z.string().max(300).optional(), phone:z.string().max(60).optional(), hours:z.string().max(120).optional(), map_url:z.string().url().max(500).or(z.literal('')).optional(), image_path:z.string().max(300).optional(), sort_order:z.number().int().min(0).max(999).optional(), active:z.boolean().optional() });
-const offer = z.object({ title_en:z.string().min(2).max(160), title_ar:z.string().max(160).optional(), description_en:z.string().min(2).max(1500), description_ar:z.string().max(1500).optional(), discount:z.string().max(100).optional(), badge:z.string().max(80).optional(), image_path:z.string().max(300).optional(), branch_slug:z.string().max(100).optional(), promo_code:z.string().max(80).optional(), terms_en:z.string().max(2000).optional(), terms_ar:z.string().max(2000).optional(), starts_at:date, ends_at:date, status:z.enum(['draft','published','paused','archived']).optional() });
+const offer = z.object({ title_en:z.string().min(2).max(160), title_ar:z.string().max(160).optional(), description_en:z.string().min(2).max(1500), description_ar:z.string().max(1500).optional(), discount:z.string().trim().refine(value => value === '' || (/^\d+(?:\.\d{1,2})?\s*%?$/.test(value) && Number(value.replace('%','').trim()) <= 100), 'Enter a percentage from 0 to 100.').transform(value => value === '' ? '' : `${Number(value.replace('%','').trim())}%`).optional(), badge:z.string().max(80).optional(), image_path:z.string().max(300).optional(), branch_slug:z.string().max(100).optional(), promo_code:z.string().max(80).optional(), terms_en:z.string().max(2000).optional(), terms_ar:z.string().max(2000).optional(), starts_at:date, ends_at:date, status:z.enum(['draft','published','paused','archived']).optional() });
 const schemas = { services:service, branches:branch, offers:offer };
 
 function cleanInput(collection: Collection, raw: Record<string, unknown>) {
   const clean: Record<string, unknown> = {};
   for (const key of fields[collection]) if (key in raw) clean[key] = raw[key];
   return clean;
+}
+function validOfferDates(value: Record<string, unknown>) {
+  if (!value.starts_at || !value.ends_at) return true;
+  return new Date(String(value.ends_at)).getTime() >= new Date(String(value.starts_at)).getTime();
 }
 function dbValue(value: unknown, key: string) {
   if ((key === 'starts_at' || key === 'ends_at') && typeof value === 'string') return new Date(value);
@@ -41,7 +45,8 @@ export async function createContent(collection: Collection, req: Request) {
   const admin = await currentAdmin(); if (!admin) return bad('Sign in required.', 401);
   let raw: Record<string, unknown>; try { raw = await req.json(); } catch { return bad('Invalid JSON body.'); }
   const parsed = schemas[collection].safeParse(cleanInput(collection, raw));
-  if (!parsed.success) return bad('Please check the required content fields.');
+  if (!parsed.success) return bad('Please check the required content fields and use a discount from 0 to 100%.');
+  if (collection === 'offers' && !validOfferDates(parsed.data)) return bad('End date must be after the start date.');
   try {
     const values = Object.fromEntries(Object.entries(parsed.data).map(([key,value]) => [key,dbValue(value,key)]));
     const result = await insertRow<{id:string}>(collection, values);
@@ -56,6 +61,11 @@ export async function updateContent(collection: Collection, req: Request) {
   const clean = cleanInput(collection, raw); const parsed = schemas[collection].partial().safeParse(clean);
   if (!parsed.success || !Object.keys(parsed.data).length) return bad('Please check the content fields.');
   try {
+    if (collection === 'offers') {
+      const existing = await query('SELECT starts_at,ends_at FROM offers WHERE id=$1', [id]);
+      if (!existing.rows.length) return bad('Content not found.', 404);
+      if (!validOfferDates({...existing.rows[0], ...parsed.data})) return bad('End date must be after the start date.');
+    }
     const entries = Object.entries(parsed.data); const assignments = entries.map(([key], i) => `${key}=$${i + 1}`).join(',');
     await query(`UPDATE ${collection} SET ${assignments},updated_at=now() WHERE id=$${entries.length + 1}`, [...entries.map(([key, value]) => dbValue(value,key)), id]);
     const result = await query(`SELECT * FROM ${collection} WHERE id=$1`, [id]);

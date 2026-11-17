@@ -84,7 +84,7 @@ try {
   for (const [collection,body] of [
     ['services',{slug:'http-service',title_en:'HTTP service',summary_en:'Service test',details_en:['اختبار'],image_path:'/assets/oil-change-web.jpg',active:false}],
     ['branches',{slug:'http-branch',name_en:'HTTP branch',address_en:'Doha Qatar'}],
-    ['offers',{title_en:'HTTP offer',description_en:'Offer test',starts_at:toQatarDateTimeInput(offerStart),ends_at:toQatarDateTimeInput(offerEnd),status:'published',branch_slug:'b-ring',promo_code:'NATIONAL26',terms_en:'Test offer terms'}],
+    ['offers',{title_en:'HTTP offer',description_en:'Offer test',discount:'15 %',starts_at:toQatarDateTimeInput(offerStart),ends_at:toQatarDateTimeInput(offerEnd),status:'published',branch_slug:'b-ring',promo_code:'NATIONAL26',terms_en:'Test offer terms'}],
   ]) {
     const created=await request(`/api/admin/${collection}`,{method:'POST',body,status:201});
     const changed=await request(`/api/admin/${collection}`,{method:'PUT',body:{id:created.id,...(collection==='branches'?{name_en:'Updated branch'}:{title_en:'Updated item'})}});
@@ -94,6 +94,13 @@ try {
     if(collection==='offers'){
       assert.equal(created.starts_at,offerStart.toISOString());
       assert.equal(created.ends_at,offerEnd.toISOString());
+      assert.equal(changed.starts_at,offerStart.toISOString());
+      assert.equal(changed.ends_at,offerEnd.toISOString());
+      assert.equal(changed.discount,'15%');
+      await request('/api/admin/offers',{method:'PUT',body:{id:created.id,discount:'101'},status:400});
+      await request('/api/admin/offers',{method:'PUT',body:{id:created.id,ends_at:toQatarDateTimeInput(new Date(offerStart.getTime()-60000))},status:400});
+      const page=await fetch(origin+'/offers/'+created.id);assert.equal(page.status,200);
+      const html=await page.text();assert.ok(html.includes('property="og:image"'));assert.ok(html.includes('property="og:title"'));assert.ok(html.includes('facebook.com/sharer/sharer.php'));
       const visible=(await request('/api/public/site')).offers.find(item=>item.id===created.id);
       assert.ok(visible);assert.equal(visible.branch_slug,'b-ring');assert.equal(visible.promo_code,'NATIONAL26');assert.equal(visible.terms_en,'Test offer terms');
     }
@@ -101,6 +108,7 @@ try {
   }
   const future=await db.insert('offers',{title_en:'Future test offer',description_en:'Test',status:'published',starts_at:new Date(Date.now()+86400000)});
   const expired=await db.insert('offers',{title_en:'Expired test offer',description_en:'Test',status:'published',ends_at:new Date(Date.now()-86400000)});
+  for(const id of [future.id,expired.id,'00000000-0000-4000-8000-000000000000'])assert.equal((await fetch(origin+'/offers/'+id)).status,404);
   const filtered=(await request('/api/public/site')).offers;
   assert.ok(!filtered.some(item=>item.id===future.id||item.id===expired.id));
   const settings=await request('/api/admin/site');

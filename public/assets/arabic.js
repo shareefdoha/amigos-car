@@ -36,6 +36,12 @@
     '8:00 AM – 1:00 PM; 4:00 PM – 8:30 PM':'8:00 ص – 1:00 م؛ 4:00 م – 8:30 م',
     '8:00 AM – 1:00 PM; 4:00 PM – 9:00 PM':'8:00 ص – 1:00 م؛ 4:00 م – 9:00 م'
   });
+  Object.assign(words,{
+    'Share offer':'مشاركة العرض','Copy link':'نسخ الرابط','Share':'مشاركة',
+    'Offer link copied.':'تم نسخ رابط العرض.','Promo code copied.':'تم نسخ رمز العرض.',
+    'Loading offers…':'جارٍ تحميل العروض…',
+    'Unable to load offers. Please refresh the page.':'تعذر تحميل العروض. يرجى تحديث الصفحة.'
+  });
   // Match translated link labels after decorative text arrows become SVG icons.
   Object.entries(words).forEach(([source,target])=>{
     const label=source.replace(/[↗→←]/g,'').trim();
