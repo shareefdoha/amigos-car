@@ -57,7 +57,7 @@
 .booking-heading>p:last-child{font-size:14px;line-height:1.6;color:var(--muted);margin:8px 0 0;max-width:560px}
 .booking-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px 17px}
 .booking-form-grid label{display:grid;align-content:start;gap:7px;color:#334155;font-size:14px;font-weight:700}
-.booking-form-grid label>span{display:inline;color:#e87521}
+.booking-form-grid label>.booking-label-text{color:inherit}.booking-form-grid .booking-required{color:#e87521}
 .booking-form-grid input,.booking-form-grid select,.booking-form-grid textarea{width:100%;min-width:0;min-height:44px;padding:11px 12px;border:1px solid #dce2e9;border-radius:5px;background:#fbfcfd;color:#17243b;font-size:14px;outline:none;transition:border-color .18s,box-shadow .18s,background .18s}
 .booking-form-grid input:focus,.booking-form-grid select:focus,.booking-form-grid textarea:focus{border-color:#f47b20;background:#fff;box-shadow:0 0 0 3px rgba(244,123,32,.12)}
 .booking-form-grid input::placeholder,.booking-form-grid textarea::placeholder{color:#98a2b1}
