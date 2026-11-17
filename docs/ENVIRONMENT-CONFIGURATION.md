@@ -27,7 +27,7 @@ Configure these in the host's secret/environment panel. Do not deploy a checked-
 | `ADMIN_INITIAL_PASSWORD` | New unique bootstrap password; rotate after provisioning and follow your identity policy. |
 | `AUTH_SECRET` | Cryptographically random value of at least 32 characters. Store only in the host secret manager. |
 | `MAIL_MODE` | `smtp`; console mode is local development only. |
-| `BOOKING_NOTIFICATION_EMAIL` | Recipient for appointment notifications. Defaults to `info@amigoscarcare.com`. This is separate from the customer email and SMTP sender. |
+| `BOOKING_NOTIFICATION_EMAIL` | Email recipient for direct/legacy booking API submissions only. The homepage appointment form opens branch WhatsApp instead. |
 | `SMTP_HOST` | Transactional SMTP server hostname. |
 | `SMTP_PORT` | Provider's recommended port. The current transport enables implicit TLS on port 465. |
 | `SMTP_USER`, `SMTP_PASS` | SMTP credentials. Rotate if exposed. |
@@ -47,6 +47,6 @@ Admin sign-in does not use SMTP or email verification. Business, career and book
 
 Database configuration does not make file uploads durable. The current app stores CMS images in `public/uploads/` and career CVs in `data/private-cv/` on the application filesystem. Configure persistent private/public object storage and update the storage adapter before deploying to an ephemeral or multi-instance host.
 
-## Appointment notification checks
+## Legacy booking API notification checks
 
-The appointment form confirms database receipt. Its `notified` response means the SMTP server accepted the message, not that it reached the recipient inbox. Set `BOOKING_NOTIFICATION_EMAIL` to the staff inbox in the deployed environment. Working SMTP credentials are still required for notification email even though admin login does not require email. The CMS labels booking notification status as submitted to the mail server or not confirmed. Older records may not have recorded SMTP status.
+The homepage appointment form opens the selected branch's WhatsApp chat. No SMTP configuration is needed for that flow. For direct API submissions, the enquiry endpoint confirms database receipt. Its `notified` response means the SMTP server accepted the message, not that it reached the recipient inbox. Set `BOOKING_NOTIFICATION_EMAIL` to the staff inbox in the deployed environment. Working SMTP credentials are still required for notification email even though admin login does not require email. The CMS labels booking notification status as submitted to the mail server or not confirmed. Older records may not have recorded SMTP status.

@@ -86,3 +86,5 @@
 html[dir=rtl] .ui-icon[data-directional=true]{transform:scaleX(-1)}
 
 @media(max-width:480px){.hero .actions .button{gap:10px;padding:14px 16px;white-space:nowrap}}
+
+.booking-destination{font-size:12px;line-height:1.6;color:var(--muted);margin:12px 0}.booking-destination strong{color:var(--navy)}

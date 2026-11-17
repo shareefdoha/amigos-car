@@ -46,7 +46,7 @@ All web requests share one origin. The server checks the session cookie before r
 - Separate business enquiry and career application pages.
 - Shared footer social links for the official Instagram, Facebook and LinkedIn profiles; external links open in a new tab with safe link attributes.
 - Service and branch images are separate, editable image paths.
-- Booking, business and career submissions are validated server-side and stored in the enquiry table.
+- Homepage appointment requests open a prefilled WhatsApp chat for the selected branch. Business, career and direct API enquiries are validated server-side and stored in the enquiry table.
 - Career CV files are limited to PDF/DOC/DOCX and 8 MB and saved outside the public web directory. Authenticated admin downloads are served through an admin route.
 - Business, career and booking submissions are stored in the enquiry inbox. Email notifications go to `info@amigoscarcare.com` when SMTP settings are configured. If delivery is unconfigured or fails, the submission remains stored for admin review; the response confirms receipt, not email delivery.
 

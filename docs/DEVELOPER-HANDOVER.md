@@ -47,7 +47,7 @@ flowchart LR
 ### Main request flows
 
 1. **Public content:** the browser loads Next.js pages. The home page calls `GET /api/public/site`, which seeds defaults if needed and returns active services, active branches, published offers, and public settings.
-2. **Booking:** the form submits JSON to `/api/public/enquiries`. The API validates and stores the request. It attempts email notification if SMTP is fully configured; the database inbox remains the record of receipt.
+2. **Booking:** the homepage form creates a prefilled WhatsApp link using the selected branch's CMS phone number. The customer reviews the request and taps Send in WhatsApp. The homepage does not submit a booking to the API or send email. `lib/booking-whatsapp.mjs` validates the destination and encodes all appointment fields.
 3. **Business enquiry and career application:** multipart forms submit to `/api/public/business` and `/api/public/careers`. The API validates fields, stores the enquiry, stores career CVs privately, and attempts notification email.
 4. **CMS:** an administrator signs in with username and password. The server sets an HttpOnly session cookie. The CMS calls protected `/api/admin/*` endpoints; changes are written to the database and audit log.
 5. **Assets:** bundled photos and public scripts live in `public/assets`. CMS image uploads are currently written under `public/uploads`; career attachments are written under `data/private-cv`.

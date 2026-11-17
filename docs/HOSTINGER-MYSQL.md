@@ -50,3 +50,7 @@ Run `pnpm check`, `pnpm build`, and `pnpm test:db` for type/build checks and dis
 
 - [Hostinger database engine](https://www.hostinger.com/support/1583226-which-database-management-system-is-used-at-hostinger/)
 - [Find Hostinger database connection details](https://www.hostinger.com/support/1583552-how-to-find-your-mysql-database-details-in-hostinger/)
+
+## Appointment destination
+
+Homepage appointment requests now open WhatsApp for the selected branch. Update each branch's phone in the CMS to its WhatsApp-enabled international number. This flow requires no booking email settings. Customers must tap Send in WhatsApp before the branch receives the message.
