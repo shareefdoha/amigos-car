@@ -51,6 +51,7 @@
     'Offers from Amigos Car Care':'عروض أميغوس للعناية بالسيارات',
     'All offers':'جميع العروض'
   });
+  Object.assign(words,{'Please enter your name.':'يرجى إدخال اسمك.','Please enter your mobile number.':'يرجى إدخال رقم الجوال.','Please enter a valid mobile number.':'يرجى إدخال رقم جوال صحيح.'});
   // Match translated link labels after decorative text arrows become SVG icons.
   Object.entries(words).forEach(([source,target])=>{
     const label=source.replace(/[↗→←]/g,'').trim();

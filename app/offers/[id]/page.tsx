@@ -8,7 +8,7 @@ export const dynamic='force-dynamic';
 const getOffer=cache(async(id:string)=>{
  if(!/^[a-f0-9-]{36}$/i.test(id))return null;
  await ensureSeed();
- const result=await query<Offer>("SELECT id,title_en,title_ar,description_en,description_ar,discount,badge,image_path,branch_slug,promo_code,terms_en,terms_ar,starts_at,ends_at FROM offers WHERE id=$1 AND status='published' AND (starts_at IS NULL OR starts_at<=now()) AND (ends_at IS NULL OR ends_at>=now())",[id]);
+ const result=await query<Offer>("SELECT id,title_en,title_ar,description_en,description_ar,discount,badge,image_path,branch_slug,promo_code,terms_en,terms_ar,starts_at,ends_at,(SELECT name_en FROM branches WHERE branches.slug=offers.branch_slug) AS branch_name_en,(SELECT name_ar FROM branches WHERE branches.slug=offers.branch_slug) AS branch_name_ar FROM offers WHERE id=$1 AND status='published' AND (starts_at IS NULL OR starts_at<=now()) AND (ends_at IS NULL OR ends_at>=now())",[id]);
  return result.rows[0]||null;
 });
 type Props={params:Promise<{id:string}>};

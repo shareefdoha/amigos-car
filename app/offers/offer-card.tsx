@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {formatQatarDateTime} from '@/lib/offer-dates.mjs';
-export type Offer={id:string;title_en:string;title_ar:string;description_en:string;description_ar:string;discount:string;badge:string;image_path:string;branch_slug:string;promo_code:string;terms_en:string;terms_ar:string;starts_at:string|null;ends_at:string|null};
+export type Offer={id:string;title_en:string;title_ar:string;description_en:string;description_ar:string;discount:string;badge:string;image_path:string;branch_slug:string;branch_name_en?:string|null;branch_name_ar?:string|null;promo_code:string;terms_en:string;terms_ar:string;starts_at:string|null;ends_at:string|null};
 const branches:Record<string,string>={'b-ring':'B-Ring · Doha','industrial-area':'Industrial Area','ezdan-wukair':'Ezdan Oasis · Al Wukair'};
 export default function OfferCard({offer:o,detail=false}:{offer:Offer;detail?:boolean}){
  const [notice,setNotice]=useState('');
@@ -20,7 +20,7 @@ export default function OfferCard({offer:o,detail=false}:{offer:Offer;detail?:bo
  async function share(){try{if(navigator.share)await navigator.share({title,text:description,url});else await copy(url,'Offer link copied.')}catch(error){if(!(error instanceof Error&&error.name==='AbortError'))setNotice('Unable to share. Please use Facebook or copy the link.')}}
  return <article data-localized className={'offer-card offer-card-new'+(detail?' offer-card-detail':'')}>
  {o.image_path&&failedImage!==o.image_path&&<a className="offer-art" href={"/offers/"+encodeURIComponent(o.id)} aria-label={(ar?'عرض ':'View ')+title}><img src={o.image_path} alt={title} onError={()=>setFailedImage(o.image_path)}/></a>}
- <div className="offer-content"><div className="offer-meta"><span>{branchNames[o.branch_slug]||(ar?'كل الفروع':'All branches')}</span>{discount&&<strong className="offer-saving">{discount} {ar?'خصم':'off'}</strong>}</div>
+ <div className="offer-content"><div className="offer-meta"><span>{o.branch_slug==='all'||!o.branch_slug?(ar?'كل الفروع':'All branches'):(ar&&o.branch_name_ar?.trim())||o.branch_name_en||branchNames[o.branch_slug]||o.branch_slug}</span>{discount&&<strong className="offer-saving">{discount} {ar?'خصم':'off'}</strong>}</div>
  <h2>{detail?title:<a href={"/offers/"+encodeURIComponent(o.id)}>{title}</a>}</h2><p>{description}</p>
  {o.ends_at&&<p className="offer-validity">{ar?'صالح حتى':'Valid until'} {date} · {ar?'بتوقيت قطر':'Qatar time'}</p>}
  {o.promo_code&&<button type="button" className="promo-code" onClick={()=>copy(o.promo_code,'Promo code copied.')}><span>{ar?'رمز العرض':'Promo code'}</span><b>{o.promo_code}</b><span>{ar?'نسخ':'Copy'}</span></button>}
