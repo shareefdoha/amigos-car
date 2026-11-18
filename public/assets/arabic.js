@@ -19,6 +19,7 @@
   });
   Object.assign(words,{
     'Continue in WhatsApp':'المتابعة عبر واتساب',
+    'Continue to Booking':'المتابعة إلى الحجز',
     'Email address (optional)':'البريد الإلكتروني (اختياري)',
     'Selected branch WhatsApp:':'واتساب الفرع المحدد:',
     'Choose your service, branch and preferred visit. Continue in WhatsApp to send your request to that branch.':'اختر الخدمة والفرع والموعد المفضل، ثم تابع عبر واتساب لإرسال طلبك إلى الفرع المحدد.',
