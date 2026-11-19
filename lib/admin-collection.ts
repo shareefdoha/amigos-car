@@ -22,6 +22,14 @@ const branch = z.object({ slug, name_en:z.string().min(2).max(160), name_ar:z.st
 const offer = z.object({ title_en:z.string().min(2).max(160), title_ar:z.string().max(160).optional(), description_en:z.string().min(2).max(1500), description_ar:z.string().max(1500).optional(), discount:z.string().trim().refine(value => value === '' || (/^\d+(?:\.\d{1,2})?\s*%?$/.test(value) && Number(value.replace('%','').trim()) <= 100), 'Enter a percentage from 0 to 100.').transform(value => value === '' ? '' : `${Number(value.replace('%','').trim())}%`).optional(), badge:z.string().max(80).optional(), image_path:z.string().max(300).optional(), branch_slug:z.string().max(100).optional(), promo_code:z.string().max(80).optional(), terms_en:z.string().max(2000).optional(), terms_ar:z.string().max(2000).optional(), starts_at:date, ends_at:date, status:z.enum(['draft','published','paused','archived']).optional() });
 const schemas = { services:service, branches:branch, offers:offer };
 
+function validationMessage(collection: Collection, error: z.ZodError) {
+  const field=String(error.issues[0]?.path[0] || '');
+  if (collection === 'branches') {
+    const messages:Record<string,string>={slug:'Use a URL slug with lowercase letters, numbers and hyphens only.',name_en:'Enter a branch name of at least 2 characters.',address_en:'Enter a branch address of at least 2 characters.',map_url:'Enter a complete Google Maps link beginning with https://, or leave it blank.',sort_order:'Display order must be a whole number from 0 to 999.',active:'Select whether the branch is active.'};
+    return messages[field] || 'Please check the branch details and try again.';
+  }
+  return collection === 'offers' ? 'Please check the offer fields and use a discount from 0 to 100%.' : 'Please check the required service fields.';
+}
 function cleanInput(collection: Collection, raw: Record<string, unknown>) {
   const clean: Record<string, unknown> = {};
   for (const key of fields[collection]) if (key in raw) clean[key] = raw[key];
@@ -45,7 +53,7 @@ export async function createContent(collection: Collection, req: Request) {
   const admin = await currentAdmin(); if (!admin) return bad('Sign in required.', 401);
   let raw: Record<string, unknown>; try { raw = await req.json(); } catch { return bad('Invalid JSON body.'); }
   const parsed = schemas[collection].safeParse(cleanInput(collection, raw));
-  if (!parsed.success) return bad('Please check the required content fields and use a discount from 0 to 100%.');
+  if (!parsed.success) return bad(validationMessage(collection, parsed.error));
   if (collection === 'offers' && !validOfferDates(parsed.data)) return bad('End date must be after the start date.');
   try {
     const values = Object.fromEntries(Object.entries(parsed.data).map(([key,value]) => [key,dbValue(value,key)]));
@@ -59,7 +67,8 @@ export async function updateContent(collection: Collection, req: Request) {
   let raw: Record<string, unknown>; try { raw = await req.json(); } catch { return bad('Invalid JSON body.'); }
   const id = typeof raw.id === 'string' ? raw.id : ''; if (!id) return bad('Missing content id.');
   const clean = cleanInput(collection, raw); const parsed = schemas[collection].partial().safeParse(clean);
-  if (!parsed.success || !Object.keys(parsed.data).length) return bad('Please check the content fields.');
+  if (!parsed.success) return bad(validationMessage(collection, parsed.error));
+  if (!Object.keys(parsed.data).length) return bad('Please provide content to update.');
   try {
     if (collection === 'offers') {
       const existing = await query('SELECT starts_at,ends_at FROM offers WHERE id=$1', [id]);
