@@ -72,6 +72,8 @@ try {
   assert.deepEqual(site.services.find(service=>service.slug==='periodic-maintenance').gallery_images,['/assets/periodic-maintenance-drive.jpg']);
   assert.equal((await request('/api/public/site')).services.length,8);
   await request('/api/admin/services',{status:401});
+  const csrf=await fetch(origin+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json','Origin':'https://attacker.example'},body:JSON.stringify({username:'http-test-admin',password:'wrong'})});assert.equal(csrf.status,403);
+  await request('/api/auth/login',{method:'POST',body:{username:"' OR 1=1 --",password:'wrong-password'},status:401});
   await request('/api/auth/login',{method:'POST',body:{username:'http-test-admin',password:'wrong-password'},status:401});
   assert.equal(cookie,'');
   const login = await request('/api/auth/login',{method:'POST',body:{username:'http-test-admin',password}});
@@ -87,9 +89,13 @@ try {
     ['offers',{title_en:'HTTP offer',description_en:'Offer test',title_ar:'عرض التجربة',description_ar:'وصف العرض',terms_ar:'شروط العرض',discount:'15 %',starts_at:toQatarDateTimeInput(offerStart),ends_at:toQatarDateTimeInput(offerEnd),status:'published',branch_slug:'b-ring',promo_code:'NATIONAL26',terms_en:'Test offer terms'}],
   ]) {
     const created=await request(`/api/admin/${collection}`,{method:'POST',body,status:201});
-    const changed=await request(`/api/admin/${collection}`,{method:'PUT',body:{id:created.id,...(collection==='branches'?{name_en:'Updated branch'}:{title_en:'Updated item'})}});
+    const changed=await request(`/api/admin/${collection}`,{method:'PUT',body:{id:created.id,...(collection==='branches'?{name_en:"Branch'); DELETE FROM admins; --"}:{title_en:'Updated item'})}});
     assert.equal(changed.id,created.id);
     assert.ok((await request(`/api/admin/${collection}`)).some(item=>item.id===created.id));
+    if(collection==='branches'){
+      assert.equal(changed.name_en,"Branch'); DELETE FROM admins; --");
+      assert.equal(Number((await db.query('SELECT count(*) AS count FROM admins')).rows[0].count),1);
+    }
     if(collection==='services'){assert.equal(changed.active,false);assert.deepEqual(changed.details_en,['اختبار']);}
     if(collection==='offers'){
       assert.equal(created.starts_at,offerStart.toISOString());
@@ -129,6 +135,10 @@ try {
   const business=new FormData();
   for(const [key,value] of Object.entries({company:'Test company',type:'Fleet',name:'Test contact',email:'test@example.com',phone:'+97412345678',subject:'Business enquiry',message:'This is a test business enquiry message.',consent:'yes'}))business.set(key,value);
   await request('/api/public/business',{method:'POST',body:business,status:201});
+  const invalidCareer=new FormData();
+  for(const [key,value] of Object.entries({name:'Test applicant',email:'test@example.com',phone:'+97412345678',role:'Mechanic',experience:'5 years',message:'This is a test application.',consent:'yes'}))invalidCareer.set(key,value);
+  invalidCareer.set('cv',new Blob(['not a PDF'],{type:'application/pdf'}),'invalid.pdf');
+  await request('/api/public/careers',{method:'POST',body:invalidCareer,status:400});
   const career=new FormData();
   for(const [key,value] of Object.entries({name:'Test applicant',email:'test@example.com',phone:'+97412345678',role:'Mechanic',experience:'5 years',message:'This is a test application.',consent:'yes'}))career.set(key,value);
   career.set('cv',new Blob(['%PDF-1.4\nTest CV'],{type:'application/pdf'}),'mysql-test-cv.pdf');
