@@ -99,3 +99,6 @@ html[dir=rtl] .ui-icon[data-directional=true]{transform:scaleX(-1)}
 @media(max-width:400px){.top{padding:0 10px}.top>.brand{gap:4px}.top>.brand img{width:38px}.top>.brand strong{font-size:14px}.top>.brand small{font-size:9px}.headlinks .small{font-size:13px;padding:8px}.language-toggle{font-size:13px;padding:8px}.menu-toggle{padding:8px}}
 
 .booking-form-grid .booking-field-error{display:block;color:#b42318;font-size:14px;font-weight:600;line-height:1.4}.booking-form-grid input[aria-invalid="true"]{border-color:#b42318}.cms-form select{min-width:0;width:100%}
+
+/* Let a custom business name wrap within the brand lockup. */
+.top>.brand strong{overflow-wrap:anywhere}

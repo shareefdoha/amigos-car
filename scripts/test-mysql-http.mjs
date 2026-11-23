@@ -127,8 +127,11 @@ try {
   await request('/api/admin/upload',{method:'POST',body:invalidImage,status:400});
   assert.equal((await fetch(origin+'/api/public/images/00000000-0000-4000-8000-000000000000')).status,404);
   const settings=await request('/api/admin/site');
-  await request('/api/admin/site',{method:'PUT',body:{...settings,business_name:'MySQL Test Workshop'}});
-  assert.equal((await request('/api/public/site')).settings.business_name,'MySQL Test Workshop');
+  const revised={business_name:'Test Workshop',tagline:'Care for every car',description:'Test public description',public_email:'workshop@example.test',public_phone:'+974 5555 1234',hero_image:uploaded.path};
+  await request('/api/admin/site',{method:'PUT',body:{...settings,...revised}});
+  const saved=await request('/api/admin/site');const published=(await request('/api/public/site')).settings;
+  for(const [key,value] of Object.entries(revised)){assert.equal(saved[key],value);assert.equal(published[key],value)}
+  assert.equal((await fetch(origin+published.hero_image)).status,200);
   const booking=await request('/api/public/enquiries',{method:'POST',status:201,body:{kind:'booking',contact_name:'HTTP test',email:'test@example.com',message:'Please book an oil change.'}});
   assert.match(booking.reference,/^[a-f0-9-]{36}$/);
   assert.equal(booking.notified,smtpEnabled);
