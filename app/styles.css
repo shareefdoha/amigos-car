@@ -100,5 +100,13 @@ html[dir=rtl] .ui-icon[data-directional=true]{transform:scaleX(-1)}
 
 .booking-form-grid .booking-field-error{display:block;color:#b42318;font-size:14px;font-weight:600;line-height:1.4}.booking-form-grid input[aria-invalid="true"]{border-color:#b42318}.cms-form select{min-width:0;width:100%}
 
-/* Let a custom business name wrap within the brand lockup. */
-.top>.brand strong{overflow-wrap:anywhere}
+/* Keep the editable business name inside the header at every width. */
+.top>.brand{width:235px;min-width:0;gap:9px}
+.top>.brand img{width:52px;height:42px}
+.top>.brand span{min-width:0}
+.top>.brand strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;font-size:13px;letter-spacing:.03em}
+.top>.brand small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.headlinks{flex-shrink:0}
+@media(max-width:1050px) and (min-width:761px){.top>.brand{width:175px}.top>.brand img{width:44px}.top>.brand strong{font-size:13px}.top nav{gap:8px;font-size:12px}.headlinks{gap:6px}}
+@media(max-width:760px){.top>.brand{width:auto;flex:1 1 auto;overflow:hidden}.top>.brand img{width:42px;height:40px}.top>.brand strong{font-size:13px}.top>.brand small{font-size:9px}.menu-toggle{flex-shrink:0}}
+@media(max-width:400px){.top>.brand img{width:34px}.top>.brand strong{font-size:12px}.top>.brand small{font-size:8px}}
